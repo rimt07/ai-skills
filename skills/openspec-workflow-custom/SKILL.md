@@ -1,7 +1,7 @@
 ---
 name: openspec-workflow-custom
 description: OpenSpec Workflow — Specification-Driven Change Management (Enhanced). change management workflow that guides you from idea → exploration → proposal → design → tasks → implementation → verification → archive
-version: 1.0.0
+version: 1.0.0  
 ---
 # OpenSpec Workflow — Specification-Driven Change Management (Enhanced)
 
@@ -25,14 +25,21 @@ OpenSpec is a specification-driven change management workflow that guides you fr
 ## 🔄 The Unified Workflow
 
 ```
-┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
-│  EXPLORE │───▶│ PROPOSE  │───▶│  DESIGN  │───▶│  SPECS   │───▶│  TASKS   │───▶│  APPLY   │───▶│ VERIFY   │───▶ ARCHIVE
-│ (discuss)│    │(why+scope)│   │(how+arch)│    │(detailed)│    │(breakdown)│   │(implement)│   │(validate)│
-└──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘
-     │               │               │               │               │               │               │
-     ▼               ▼               ▼               ▼               ▼               ▼               ▼
- explore-brief   proposal.md    design.md       specs/*.md      tasks.md       code + tests    verify report
-                  (reviewed)     (reviewed)      (reviewed)      (reviewed)                     archived/
+EXPLORE (optional)
+  └─ Discuss, investigate, build explore-brief.md
+      └─ PROPOSE
+           └─ Create proposal.md
+               └─ [REVIEW by @openspec-reviewer] ✅
+                   └─ DESIGN
+                        └─ Create design.md, specs/, tasks.md (3 batches)
+                            └─ [REVIEW by @openspec-reviewer per batch] ✅
+                                └─ APPLY
+                                     └─ Implement tasks
+                                         └─ [Execute tests - agent only] ✅
+                                             └─ VERIFY
+                                                  └─ Check implementation matches specs
+                                                      └─ ARCHIVE
+                                                           └─ Done ✅
 ```
 
 ---
@@ -353,14 +360,6 @@ Before creating or updating any `tasks.md`, you MUST read `openspec/config.yaml`
 - [ ] N-1.6 Document scenarios + outcomes
 - [ ] N-1.7 Verify data integrity
 
-## N. E2E Testing with Playwright MCP (MANDATORY if frontend/UI changes)
-- [ ] N.1 Navigate with `browser_navigate`
-- [ ] N.2 Execute user workflows (`browser_click`, `browser_type`, `browser_fill`)
-- [ ] N.3 Verify state with `browser_snapshot`
-- [ ] N.4 Test error scenarios
-- [ ] N.5 Verify data persistence
-- [ ] N.6 Restore test environment + close browser
-
 ## N+1. Update Technical Documentation (MANDATORY - FINAL STEP)
 ```
 
@@ -487,13 +486,14 @@ Before creating or updating any `tasks.md`, you MUST read `openspec/config.yaml`
 
 **Purpose:** Confirm implementation matches the proposal + design + specs.
 
+- Run /adversarial-review, do the verification pass before archiving an OpenSpec change
+- Run /code-auditing, do the verification of systematic code quality audits.
+
 ### Verification Checklist
 - [ ] All acceptance criteria from `requirements.md` pass
 - [ ] No architectural violations
 - [ ] All unit tests green
 - [ ] All manual endpoint tests pass
-- [ ] All E2E tests pass (if applicable)
-- [ ] Database state clean
 - [ ] Documentation updated
 
 ---
