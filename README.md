@@ -2,7 +2,7 @@
 
 A walkthrough of how work gets done in this repository, told through the lens of **JIRA-ID-123** (the Reservation Store foundation). It covers the Spec-Driven Development (SDD) approach powered by OpenSpec, the Kiro skills, custom sub-agents, and the automation hooks that keep the process consistent and compliant.
 
-> Worked example throughout: **JIRA-ID-123 — Reservation Store foundation** on branch `feature/JIRA-ID-123`, change `feature-create-endpoints`.
+> Worked example throughout: **JIRA-ID-123 — Create endpoints feature** on branch `feature/JIRA-ID-123`, change `feature-create-endpoints`.
 
 ---
 
