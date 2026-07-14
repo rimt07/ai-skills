@@ -1,8 +1,8 @@
 # Development Workflow — Platform Reservation API
 
-A walkthrough of how work gets done in this repository, told through the lens of **ORDER-351** (the Reservation Store foundation). It covers the Spec-Driven Development (SDD) approach powered by OpenSpec, the Kiro skills, custom sub-agents, and the automation hooks that keep the process consistent and compliant.
+A walkthrough of how work gets done in this repository, told through the lens of **JIRA-ID-123** (the Reservation Store foundation). It covers the Spec-Driven Development (SDD) approach powered by OpenSpec, the Kiro skills, custom sub-agents, and the automation hooks that keep the process consistent and compliant.
 
-> Worked example throughout: **ORDER-351 — Reservation Store foundation** on branch `feature/ORDER-351`, change `feature-create-endpoints-and-data-mapping`.
+> Worked example throughout: **JIRA-ID-123 — Reservation Store foundation** on branch `feature/JIRA-ID-123`, change `feature-create-endpoints`.
 
 ---
 
@@ -58,10 +58,10 @@ The notebook guards each install (`Get-Command <tool>`) so re-runs are idempoten
 
 ### 0.3 Initialize the project (Stage 3)
 
-Run from the repo root (`C:\dev\customers\arcteryx\platform-reservation-api`):
+Run from the repo root (`C:\dev\repo_folder`):
 
 ```powershell
-# 3.1 Submodules (pulls dev-standards / OCP excellence guidelines)
+# 3.1 Submodules (pulls dev-standards )
 git submodule update --init --recursive
 
 # 3.2 Serena — create/index the project
@@ -143,7 +143,7 @@ The layers that make this work:
 
 ## 2. Spec-Driven Development with OpenSpec
 
-Every change is a directory under `openspec/changes/`. For ORDER-351 that directory is `feature-create-endpoints-and-data-mapping/` and it contains:
+Every change is a directory under `openspec/changes/`. For JIRA-ID-123 that directory is `feature-create-endpoints-and-data-mapping/` and it contains:
 
 ```
 openspec/changes/feature-create-endpoints-and-data-mapping/
@@ -182,7 +182,7 @@ The skills wrap these CLI calls. The commands you will see in a session:
 | `openspec list --json` | Lists active/archived changes for selection |
 | `openspec schemas --json` | Lists available workflow schemas |
 
-For ORDER-351 the flow was: scaffold the change → author `proposal.md` (why the skeletal stubs had to become a real Reservation Store) → author `design.md` (decisions D1–D14) → decompose into `tasks.md` (21 groups from *Domain value objects* through *Update technical documentation*) → implement → verify → report.
+For JIRA-ID-123 the flow was: scaffold the change → author `proposal.md` (why the skeletal stubs had to become a real Reservation Store) → author `design.md` (decisions D1–D14) → decompose into `tasks.md` (21 groups from *Domain value objects* through *Update technical documentation*) → implement → verify → report.
 
 ---
 
@@ -210,11 +210,11 @@ Key behaviors baked into the skills:
 - **They never assume repo-local paths** — they read `planningHome`, `changeRoot`, and `artifactPaths` from `openspec status --json`.
 - **`context` and `rules` are constraints for the agent, not file content** — they steer what gets written but never get copied into the artifact.
 - **`apply` is guardrailed**: read context files first, keep changes minimal and scoped per task, update the checkbox immediately, and pause on ambiguity rather than guessing.
-- **`verify` before `archive`**: ORDER-351 produced explicit evidence in `reports/` — Step 19 (build + unit tests) and Step 20 (integration tests) — which is exactly the kind of completeness evidence the verify skill checks for.
+- **`verify` before `archive`**: JIRA-ID-123 produced explicit evidence in `reports/` — Step 19 (build + unit tests) and Step 20 (integration tests) — which is exactly the kind of completeness evidence the verify skill checks for.
 
-### 3.1 How ORDER-351 moved through the skills
+### 3.1 How JIRA-ID-123 moved through the skills
 
-1. **Propose** — `proposal.md` framed the problem: skeletal stubs couldn't handle real reservation flows, so the story delivers domain entities, the Reservation Store (MongoDB/DocumentDB schema + 7 indexes), the SAP OAA adapter skeleton, the CQRS pipeline, operational-mode infrastructure (Valkey), and the OCP response envelope.
+1. **Propose** — `proposal.md` framed the problem: skeletal stubs couldn't handle real reservation flows, so the story delivers domain entities, the Reservation Store (MongoDB/DocumentDB schema + 7 indexes), the SAP OAA adapter skeleton, the CQRS pipeline, operational-mode infrastructure (Valkey), and the  response envelope.
 2. **Design** — `design.md` recorded decisions D1–D14 (identity model, `oaaExternalId` never exposed, idempotency strategy, Polly policies, fail-open Valkey fallback, etc.).
 3. **Tasks** — `tasks.md` broke the work into 21 groups, each a checklist. Notably groups 18–21 are **mandatory quality gates**: review existing tests, run unit tests + build, run integration tests, and update technical docs.
 4. **Apply** — implemented layer by layer (domain → application → adapters → API), ticking boxes as it went. All 21 groups are `[x]`.
@@ -234,7 +234,7 @@ Five specialist agents are defined in `.kiro/agents/` (each with a `.md` persona
 | `code-review-agent` | claude-sonnet-4 | Evidence-based review across 9 phases (architecture, security, async, resilience, quality, tests, config, impact) |
 | `refactor-cleaner-agent` | claude-sonnet-4 | Safe cleanup — removes dead code while protecting domain logic, ports, and DI-invoked handlers |
 
-They are cross-linked via `related:` frontmatter so a review can hand off to the tester or architect. In ORDER-351 the division shows up directly:
+They are cross-linked via `related:` frontmatter so a review can hand off to the tester or architect. In JIRA-ID-123 the division shows up directly:
 
 - The **specialist** governs rules like *`oaaExternalId` never appears in a response DTO* — verified in the Step 20 report.
 - The **architect** enforces *dependencies point inward* — domain has zero infrastructure references; ports in Application, implementations in Adapters.
@@ -253,16 +253,16 @@ Five hooks in `.kiro/hooks/` fire automatically on IDE events. They fall into tw
 | `memory-boot-protocol` | `promptSubmit` | askAgent | Reminds the agent to silently load Serena MCP memories (session continuity) before responding |
 | `context-mode-pre` | `preToolUse` (`*`) | runCommand | `context-mode hook kiro pretooluse` — context-window protection before every tool call |
 | `context-mode-post` | `postToolUse` (`*`) | runCommand | `context-mode hook kiro posttooluse` — context-window protection after every tool call |
-| `pr-format-compliance` | `postToolUse` (`shell`) | askAgent | After git/PR shell commands, validates branch name, commit message, and PR title against OCP standards |
+| `pr-format-compliance` | `postToolUse` (`shell`) | askAgent | After git/PR shell commands, validates branch name, commit message, and PR title against standards |
 
-How they showed up in the ORDER-351 session:
+How they showed up in the JIRA-ID-123 session:
 
-- **Git context** is why the branch `feature/ORDER-351` and recent commits (`362370e feat(ORDER-351): Add failure tracking…`, `9979fca ORDER-351, Implement the reservation api core features`) are known without asking.
+- **Git context** is why the branch `feature/JIRA-ID-123` and recent commits (`362370e feat(JIRA-ID-123): Add failure tracking…`, `9979fca JIRA-ID-123, Implement the reservation api core features`) are known without asking.
 - **Memory boot** runs the Serena MCP load protocol at the start of the conversation, silently, so prior session threads are available.
 - **Context-mode pre/post** wrap every tool call to keep the working window healthy on long, multi-file changes like this one.
-- **PR-format compliance** is the deterministic gate that enforces the OCP convention: branch `feature/TICKET-description`, commit messages referencing the Jira ticket, PR titles like `[ORDER-351]: …`. The commit history already follows it.
+- **PR-format compliance** is the deterministic gate that enforces the convention: branch `feature/TICKET-description`, commit messages referencing the Jira ticket, PR titles like `[JIRA-ID-123]: …`. The commit history already follows it.
 
-There is also a **steering rule** (`submodule-update-rule.md`) that asks for `git submodule update --remote --merge` at session start to keep the OCP Engineering Excellence guidelines (`.kiro/external/ocp-excellence/`) current.
+There is also a **steering rule** (`submodule-update-rule.md`) that asks for `git submodule update --remote --merge` at session start to keep the guidelines (`.kiro/standards/`) current.
 
 ---
 
@@ -272,17 +272,17 @@ There is also a **steering rule** (`submodule-update-rule.md`) that asks for `gi
 
 - `project-context.md` — the canonical domain model, tech stack, folder map, mapper naming convention, and code-intelligence strategy (Serena → CodeGraph → grep).
 - `architecture-rules.md`, `development-rules.md`, `testing-rules.md`, `deployment-rules.md`, `messaging-rules.md`, `spec-workflow-rules.md` — topic rules, some always-on, some conditionally loaded when matching files are opened.
-- `submodule-update-rule.md` — keeps external OCP guidelines fresh.
+- `submodule-update-rule.md` — keeps external guidelines fresh.
 
-Together these mean an agent starts every ORDER-351 turn already knowing the hexagonal boundaries, the `oaaExternalId` secrecy rule, the mapper naming table, and the test conventions — without being told again.
+Together these mean an agent starts every JIRA-ID-123 turn already knowing the hexagonal boundaries, the `oaaExternalId` secrecy rule, the mapper naming table, and the test conventions — without being told again.
 
 ---
 
-## 7. End-to-end: ORDER-351 as it actually ran
+## 7. End-to-end: JIRA-ID-123 as it actually ran
 
 ```
 1. Session starts
-   └─ hooks: inject git context (feature/ORDER-351) + memory boot (Serena MCP)
+   └─ hooks: inject git context (feature/JIRA-ID-123) + memory boot (Serena MCP)
    └─ steering: project-context + architecture/testing rules loaded
 
 2. Plan (SDD)
@@ -305,8 +305,8 @@ Together these mean an agent starts every ORDER-351 turn already knowing the hex
    └─ hook pr-format-compliance validates commits/branch on each git command
 
 5. Commit
-   └─ feat(ORDER-351): implement reservation store foundations and CQRS pipeline
-   └─ feat(ORDER-351): Add failure tracking and fix SAP OAA error handling
+   └─ feat(JIRA-ID-123): implement reservation store foundations and CQRS pipeline
+   └─ feat(JIRA-ID-123): Add failure tracking and fix SAP OAA error handling
 
 6. (Next) verify-change → sync-specs → archive-change
 ```
