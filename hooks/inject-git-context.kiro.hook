@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Inject Git Branch Context",
+  "description": "On prompt submit, injects the current git branch name and recent commit log into agent context. Helps agents understand the working context without manual input.",
+  "version": "1.0.0",
+  "when": {
+    "type": "promptSubmit"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "echo '--- Git Context ---' && git rev-parse --abbrev-ref HEAD 2>/dev/null && echo '--- Recent Commits ---' && git log --oneline -5 2>/dev/null && echo '--- Uncommitted Changes ---' && git diff --stat HEAD 2>/dev/null || echo 'Not a git repository'"
+  }
+}
