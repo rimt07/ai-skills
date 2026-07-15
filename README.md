@@ -1,6 +1,6 @@
-# Development Workflow — Platform Reservation API
+# Development Workflow 
 
-A walkthrough of how work gets done in this repository, told through the lens of **JIRA-ID-123** (the Reservation Store foundation). It covers the Spec-Driven Development (SDD) approach powered by OpenSpec, the Kiro skills, custom sub-agents, and the automation hooks that keep the process consistent and compliant.
+A walkthrough of how work gets done in this repository, told through the lens of **JIRA-ID-123** (the App Store foundation). It covers the Spec-Driven Development (SDD) approach powered by OpenSpec, the Kiro skills, custom sub-agents, and the automation hooks that keep the process consistent and compliant.
 
 > Worked example throughout: **JIRA-ID-123 — Create endpoints feature** on branch `feature/JIRA-ID-123`, change `feature-create-endpoints`.
 
@@ -65,7 +65,7 @@ Run from the repo root (`C:\dev\repo_folder`):
 git submodule update --init --recursive
 
 # 3.2 Serena — create/index the project
-serena project create --name platform-reservation-api
+serena project create --name platform-app-api
 #   fallback if create fails:  serena project index
 
 # 3.3 CodeGraph — build the symbol graph
@@ -151,7 +151,7 @@ openspec/changes/feature-create-endpoints-and-data-mapping/
 ├── proposal.md             # Why + What Changes + Capabilities + Impact
 ├── design.md               # How — architectural decisions (D1–D14)
 ├── specs/
-│   └── reservation-operations/spec.md   # delta spec — requirements & scenarios
+│   └── app-operations/spec.md   # delta spec — requirements & scenarios
 ├── tasks.md                # 21 numbered task groups, 100+ checkboxes
 └── reports/                # evidence produced during implementation
     ├── 2026-07-13-step-19-unit-test-verification.md
@@ -182,7 +182,7 @@ The skills wrap these CLI calls. The commands you will see in a session:
 | `openspec list --json` | Lists active/archived changes for selection |
 | `openspec schemas --json` | Lists available workflow schemas |
 
-For JIRA-ID-123 the flow was: scaffold the change → author `proposal.md` (why the skeletal stubs had to become a real Reservation Store) → author `design.md` (decisions D1–D14) → decompose into `tasks.md` (21 groups from *Domain value objects* through *Update technical documentation*) → implement → verify → report.
+For JIRA-ID-123 the flow was: scaffold the change → author `proposal.md` (why the skeletal stubs had to become a real App Store) → author `design.md` (decisions D1–D14) → decompose into `tasks.md` (21 groups from *Domain value objects* through *Update technical documentation*) → implement → verify → report.
 
 ---
 
@@ -214,7 +214,7 @@ Key behaviors baked into the skills:
 
 ### 3.1 How JIRA-ID-123 moved through the skills
 
-1. **Propose** — `proposal.md` framed the problem: skeletal stubs couldn't handle real reservation flows, so the story delivers domain entities, the Reservation Store (MongoDB/DocumentDB schema + 7 indexes), the SAP OAA adapter skeleton, the CQRS pipeline, operational-mode infrastructure (Valkey), and the  response envelope.
+1. **Propose** — `proposal.md` framed the problem: skeletal stubs couldn't handle real  flows, so the story delivers domain entities, the  Store (MongoDB/DocumentDB schema + 7 indexes), the SAP OAA adapter skeleton, the CQRS pipeline, operational-mode infrastructure (Valkey), and the  response envelope.
 2. **Design** — `design.md` recorded decisions D1–D14 (identity model, `oaaExternalId` never exposed, idempotency strategy, Polly policies, fail-open Valkey fallback, etc.).
 3. **Tasks** — `tasks.md` broke the work into 21 groups, each a checklist. Notably groups 18–21 are **mandatory quality gates**: review existing tests, run unit tests + build, run integration tests, and update technical docs.
 4. **Apply** — implemented layer by layer (domain → application → adapters → API), ticking boxes as it went. All 21 groups are `[x]`.
@@ -229,7 +229,7 @@ Five specialist agents are defined in `.kiro/agents/` (each with a `.md` persona
 | Agent | Model | Specialty |
 |---|---|---|
 | `solution-architect-agent` | claude-sonnet-4.5 | Hexagonal architecture design & validation — dependency direction, ports/adapters, resilience, observability |
-| `reservation-api-specialist` | claude-sonnet-4 | Domain expert — reservation lifecycle, identity model (`externalCartId` vs `oaaExternalId`), SAP OAA integration, idempotency |
+| `development-api-specialist` | claude-sonnet-4 | Domain expert —  lifecycle, identity model (`externalCartId` vs `oaaExternalId`), SAP OAA integration, idempotency |
 | `unit-tester-agent` | claude-sonnet-4 | xUnit/NUnit testing strategy per layer, `Should_[Expected]_When_[Condition]` naming, coverage targets |
 | `code-review-agent` | claude-sonnet-4 | Evidence-based review across 9 phases (architecture, security, async, resilience, quality, tests, config, impact) |
 | `refactor-cleaner-agent` | claude-sonnet-4 | Safe cleanup — removes dead code while protecting domain logic, ports, and DI-invoked handlers |
@@ -238,7 +238,7 @@ They are cross-linked via `related:` frontmatter so a review can hand off to the
 
 - The **specialist** governs rules like *`oaaExternalId` never appears in a response DTO* — verified in the Step 20 report.
 - The **architect** enforces *dependencies point inward* — domain has zero infrastructure references; ports in Application, implementations in Adapters.
-- The **tester** shapes the test layout (`Reservation.Domain.Unit`, `Reservation.Application.Unit`, `Reservation.API.Unit`, `Reservation.API.Integration`) and the 59-test suite.
+- The **tester** shapes the test layout (`App.Domain.Unit`, `App.Application.Unit`, `app.API.Unit`, `App.API.Integration`) and the 59-test suite.
 - The **reviewer** runs `git diff main...HEAD`, reads every changed file, and reports findings with evidence — no speculation.
 
 ---
@@ -257,7 +257,7 @@ Five hooks in `.kiro/hooks/` fire automatically on IDE events. They fall into tw
 
 How they showed up in the JIRA-ID-123 session:
 
-- **Git context** is why the branch `feature/JIRA-ID-123` and recent commits (`362370e feat(JIRA-ID-123): Add failure tracking…`, `9979fca JIRA-ID-123, Implement the reservation api core features`) are known without asking.
+- **Git context** is why the branch `feature/JIRA-ID-123` and recent commits (`362370e feat(JIRA-ID-123): Add failure tracking…`, `9979fca JIRA-ID-123, Implement the app api core features`) are known without asking.
 - **Memory boot** runs the Serena MCP load protocol at the start of the conversation, silently, so prior session threads are available.
 - **Context-mode pre/post** wrap every tool call to keep the working window healthy on long, multi-file changes like this one.
 - **PR-format compliance** is the deterministic gate that enforces the convention: branch `feature/TICKET-description`, commit messages referencing the Jira ticket, PR titles like `[JIRA-ID-123]: …`. The commit history already follows it.
@@ -287,13 +287,13 @@ Together these mean an agent starts every JIRA-ID-123 turn already knowing the h
 
 2. Plan (SDD)
    └─ skill openspec-propose → openspec new change "feature-create-endpoints-and-data-mapping"
-   └─ proposal.md  (why the Reservation Store foundation is needed)
+   └─ proposal.md  (why the App Store foundation is needed)
    └─ design.md    (decisions D1–D14)
    └─ tasks.md     (21 groups / 100+ checkboxes)
 
 3. Implement (SDD)
    └─ skill openspec-apply-change → work tasks 0..21, tick [ ]→[x]
-      · Domain: enums, ReservationResult, OperationState, ReservationEntity/Item
+      · Domain: enums, AppResult, OperationState, AppEntity/Item
       · Application: ports, commands/queries, handlers (stubs + OperationMode fully impl.)
       · Adapters: SAP OAA (XML + error table), DocumentDB (docs + repo + indexes), Valkey
       · API: controllers (501 stubs + OperationMode + Health), request/response mappers
@@ -305,7 +305,7 @@ Together these mean an agent starts every JIRA-ID-123 turn already knowing the h
    └─ hook pr-format-compliance validates commits/branch on each git command
 
 5. Commit
-   └─ feat(JIRA-ID-123): implement reservation store foundations and CQRS pipeline
+   └─ feat(JIRA-ID-123): implement App store foundations and CQRS pipeline
    └─ feat(JIRA-ID-123): Add failure tracking and fix SAP OAA error handling
 
 6. (Next) verify-change → sync-specs → archive-change
@@ -334,10 +334,10 @@ openspec instructions apply --change "<name>" --json   # skill: openspec-apply-c
 # skill: openspec-archive-change → mv change → changes/archive/YYYY-MM-DD-<name>
 ```
 
-**Invoke a specialist** — reference the agent by name (`solution-architect-agent`, `reservation-api-specialist`, `unit-tester-agent`, `code-review-agent`, `refactor-cleaner-agent`).
+**Invoke a specialist** — reference the agent by name (`solution-architect-agent`, `developer-api-specialist`, `unit-tester-agent`, `code-review-agent`, `refactor-cleaner-agent`).
 
 **Conventions that hold everywhere**
-- Branch: `feature/ORDER-XXX-description` · PR title: `[ORDER-XXX]: …` · commits reference the ticket
+- Branch: `feature/JIRA-XXX-description` · PR title: `[JIRA-XXX]: …` · commits reference the ticket
 - Hexagonal boundaries: no HTTP types in domain/application; ports inward, adapters outward
 - `oaaExternalId` is internal — never in any API response
 - Tests: `Should_[Expected]_When_[Condition]`; verify before archive
