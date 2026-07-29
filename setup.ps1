@@ -201,7 +201,6 @@ function Test-ToolVersion {
 
     $versionString = Get-ToolVersion $Tool
 
-    # Extract major.minor.patch
     if ($versionString -match '^(\d+\.\d+\.\d+)') {
         $version = [version]$Matches[1]
     }
@@ -248,7 +247,11 @@ function Install-NpmPackage {
 
     Invoke-ExternalCommand `
         -Command "npm" `
-        -Arguments @("install", "-g", $Package)
+        -Arguments @(
+            "install",
+            "-g",
+            $Package
+        )
 
     Write-Success "$Package installed."
 }
@@ -315,12 +318,10 @@ foreach ($Tool in $MinVersions.Keys) {
 if (-not (Test-CommandExists "uv")) {
 
     Write-Info "uv is not installed."
-
     Write-Info "Installing uv..."
 
     irm https://astral.sh/uv/install.ps1 | iex
 
-    # Refresh PATH
     $env:Path = `
         [System.Environment]::GetEnvironmentVariable(
             "Path",
@@ -462,98 +463,208 @@ if (Test-CommandExists "graphify") {
     Write-Info "Installing Graphify Claude integration..."
 
     try {
+
         Invoke-ExternalCommand `
             -Command "graphify" `
-            -Arguments @("claude", "install")
+            -Arguments @(
+                "claude",
+                "install"
+            )
+
     }
     catch {
-        Write-WarningMessage "Graphify Claude integration failed."
+
+        Write-WarningMessage `
+            "Graphify Claude integration failed."
     }
 
     Write-Info "Installing Graphify Cursor integration..."
 
     try {
+
         Invoke-ExternalCommand `
             -Command "graphify" `
-            -Arguments @("cursor", "install")
+            -Arguments @(
+                "cursor",
+                "install"
+            )
+
     }
     catch {
-        Write-WarningMessage "Graphify Cursor integration failed."
-    }
 
+        Write-WarningMessage `
+            "Graphify Cursor integration failed."
+    }
 }
 
 # ============================================================
-# Stage 4
+# Stage 5
+# Git Submodules
+# ============================================================
+
+Write-Host ""
+Write-Host "============================================================"
+Write-Host " Stage 4 - Git Submodules"
+Write-Host "============================================================"
+Write-Host ""
+
+Write-Info "Configuring OCP Excellence submodule..."
+
+$GitModulesFile = Join-Path $ProjectPath ".gitmodules"
+$SubmoduleFullPath = Join-Path $ProjectPath $DevStandardsPath
+
+# ------------------------------------------------------------
+# Ensure external directory exists
+# ------------------------------------------------------------
+
+$ExternalDirectory = Join-Path $ProjectPath "external"
+
+if (-not (Test-Path $ExternalDirectory)) {
+
+    Write-Info "Creating external directory..."
+
+    New-Item `
+        -ItemType Directory `
+        -Path $ExternalDirectory `
+        -Force |
+        Out-Null
+}
+
+# ------------------------------------------------------------
+# Handle existing submodule configuration
+# ------------------------------------------------------------
+
+$SubmoduleConfigured = $false
+
+if (Test-Path $GitModulesFile) {
+
+    $GitModulesContent = Get-Content `
+        $GitModulesFile `
+        -Raw `
+        -ErrorAction SilentlyContinue
+
+    if ($GitModulesContent -match [regex]::Escape($DevStandardsPath)) {
+        $SubmoduleConfigured = $true
+    }
+}
+
+# ------------------------------------------------------------
+# Add submodule
+# ------------------------------------------------------------
+
+if ($SubmoduleConfigured) {
+
+    Write-Success "OCP Excellence submodule already configured."
+
+    if ($Force) {
+
+        Write-Info "Updating existing OCP Excellence submodule..."
+
+        Invoke-ExternalCommand `
+            -Command "git" `
+            -Arguments @(
+                "submodule",
+                "update",
+                "--init",
+                "--recursive",
+                $DevStandardsPath
+            )
+
+    }
+
+}
+else {
+
+    if (Test-Path $SubmoduleFullPath) {
+
+        Write-WarningMessage `
+            "Directory exists but is not configured as a Git submodule: $DevStandardsPath"
+
+        if ($Force) {
+
+            Write-Info "Removing existing directory because Force mode is enabled..."
+
+            Remove-Item `
+                -Recurse `
+                -Force `
+                $SubmoduleFullPath
+        }
+        else {
+
+            throw @"
+The directory already exists:
+
+$SubmoduleFullPath
+
+but it is not configured as a Git submodule.
+
+Run the bootstrap with:
+
+    .\setup.ps1 -Force
+"@
+        }
+    }
+
+    Write-Info "Adding OCP Excellence submodule..."
+
+    Invoke-ExternalCommand `
+        -Command "git" `
+        -Arguments @(
+            "submodule",
+            "add",
+            $DevStandardsRepository,
+            $DevStandardsPath
+        )
+
+    Write-Success "OCP Excellence submodule added."
+}
+
+# ------------------------------------------------------------
+# Validate submodule
+# ------------------------------------------------------------
+
+if (Test-Path $GitModulesFile) {
+
+    Write-Success ".gitmodules created/configured."
+
+}
+else {
+
+    throw ".gitmodules was not created."
+}
+
+if (Test-Path $SubmoduleFullPath) {
+
+    Write-Success "OCP Excellence submodule available."
+
+}
+else {
+
+    throw "OCP Excellence submodule directory was not created."
+}
+
+# ============================================================
+# Stage 5
 # OCP Excellence -> Kiro Steering Files
 # ============================================================
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 4 - OCP Excellence Steering Files"
+Write-Host " Stage 5 - OCP Excellence Steering Files"
 Write-Host "============================================================"
 Write-Host ""
 
 $OcpExcellenceRepository = `
-    "https://github.com/arcteryx-ocp/ocp-excellence.git"
+    $DevStandardsRepository
 
-$OcpExcellenceTempPath = `
-    Join-Path $env:TEMP "ocp-excellence"
+$OcpExcellencePath = `
+    $SubmoduleFullPath
 
 $KiroDirectory = `
     Join-Path $ProjectPath ".kiro"
 
 $KiroSteeringDirectory = `
     Join-Path $KiroDirectory "steering"
-
-# ------------------------------------------------------------
-# Validate Git
-# ------------------------------------------------------------
-
-if (-not (Test-CommandExists "git")) {
-    throw "Git is required to install OCP Excellence."
-}
-
-# ------------------------------------------------------------
-# Clone repository
-# ------------------------------------------------------------
-
-if (Test-Path $OcpExcellenceTempPath) {
-
-    if ($Force) {
-
-        Write-Info "Removing existing OCP Excellence temporary directory..."
-
-        Remove-Item `
-            -Recurse `
-            -Force `
-            $OcpExcellenceTempPath
-
-    }
-    else {
-
-        Write-Info `
-            "OCP Excellence repository already exists in temporary directory."
-
-    }
-}
-
-if (-not (Test-Path $OcpExcellenceTempPath)) {
-
-    Write-Info "Cloning OCP Excellence..."
-
-    Invoke-ExternalCommand `
-        -Command "git" `
-        -Arguments @(
-            "clone",
-            "--depth",
-            "1",
-            $OcpExcellenceRepository,
-            $OcpExcellenceTempPath
-        )
-
-    Write-Success "OCP Excellence repository cloned."
-}
 
 # ------------------------------------------------------------
 # Create Kiro directories
@@ -590,9 +701,9 @@ Write-Info "Searching OCP Excellence for Kiro steering files..."
 $SteeringSources = @()
 
 $PotentialSteeringDirectories = @(
-    (Join-Path $OcpExcellenceTempPath ".kiro\steering"),
-    (Join-Path $OcpExcellenceTempPath "steering"),
-    (Join-Path $OcpExcellenceTempPath "docs\steering")
+    (Join-Path $OcpExcellencePath ".kiro\steering"),
+    (Join-Path $OcpExcellencePath "steering"),
+    (Join-Path $OcpExcellencePath "docs\steering")
 )
 
 foreach ($Directory in $PotentialSteeringDirectories) {
@@ -616,9 +727,9 @@ if ($SteeringSources.Count -eq 0) {
         "No known steering directory was found in OCP Excellence."
 
     Write-WarningMessage `
-        "Repository cloned at:"
+        "Repository available at:"
 
-    Write-Host "  $OcpExcellenceTempPath"
+    Write-Host "  $OcpExcellencePath"
 
 }
 else {
@@ -664,12 +775,16 @@ if (Test-Path $KiroSteeringDirectory) {
 
 Write-Success "OCP Excellence steering setup completed."
 
-
-
 # ============================================================
 # Stage 6
 # Serena project
 # ============================================================
+
+Write-Host ""
+Write-Host "============================================================"
+Write-Host " Stage 6 - Serena Project"
+Write-Host "============================================================"
+Write-Host ""
 
 Write-Info "Initializing Serena project: $ProjectName"
 
@@ -677,7 +792,7 @@ $SerenaDirectory = Join-Path $ProjectPath ".serena"
 $SerenaProjectFile = Join-Path $SerenaDirectory "project.yml"
 
 # ------------------------------------------------------------
-# If an invalid Serena project exists, handle it
+# Validate existing Serena project
 # ------------------------------------------------------------
 
 if (Test-Path $SerenaProjectFile) {
@@ -703,7 +818,6 @@ if (Test-Path $SerenaProjectFile) {
                 -Recurse `
                 -Force `
                 $SerenaDirectory
-
         }
         else {
 
@@ -724,23 +838,38 @@ Run the bootstrap again using:
 }
 
 # ------------------------------------------------------------
-# Create project
+# Create Serena project
 # ------------------------------------------------------------
 
 if (-not (Test-Path $SerenaProjectFile)) {
 
     Write-Info "Creating Serena project..."
 
-    Invoke-ExternalCommand `
-        -Command "serena" `
-        -Arguments @(
-            "project",
-            "create",
-            "--name",
-            $ProjectName
-        )
+    try {
 
-    Write-Success "Serena project created."
+        Invoke-ExternalCommand `
+            -Command "serena" `
+            -Arguments @(
+                "project",
+                "create",
+                "--name",
+                $ProjectName
+            )
+
+        Write-Success "Serena project created."
+
+    }
+    catch {
+
+        Write-WarningMessage `
+            "Serena project create failed."
+
+        Write-WarningMessage `
+            "Serena may require a project configuration with languages."
+
+        throw
+    }
+
 }
 else {
 
@@ -748,42 +877,34 @@ else {
 }
 
 # ------------------------------------------------------------
-# Index project
-# ------------------------------------------------------------
-
-Write-Info "Indexing Serena project..."
-
-Invoke-ExternalCommand `
-    -Command "serena" `
-    -Arguments @(
-        "project",
-        "index"
-    )
-
-Write-Success "Serena project indexed successfully."
-
-# ------------------------------------------------------------
-# Create Serena project if it doesn't exist
+# Validate Serena project configuration
 # ------------------------------------------------------------
 
 if (-not (Test-Path $SerenaProjectFile)) {
 
-    Write-Info "Creating Serena project..."
-
-    Invoke-ExternalCommand `
-        -Command "serena" `
-        -Arguments @(
-            "project",
-            "create",
-            "--name",
-            $ProjectName
-        )
-
-    Write-Success "Serena project created."
+    throw "Serena project.yml was not created: $SerenaProjectFile"
 }
 
+$SerenaConfig = Get-Content `
+    $SerenaProjectFile `
+    -Raw
+
+if ($SerenaConfig -notmatch "(?m)^languages\s*:") {
+
+    throw @"
+Serena project.yml was created but does not contain 'languages'.
+
+File:
+$SerenaProjectFile
+
+Please configure the project manually before indexing.
+"@
+}
+
+Write-Success "Serena project configuration validated."
+
 # ------------------------------------------------------------
-# Index project
+# Index Serena project
 # ------------------------------------------------------------
 
 Write-Info "Indexing Serena project..."
@@ -815,16 +936,33 @@ if (-not (Test-Path $SerenaGlobalConfig)) {
 
     Write-Info "Initializing Serena global configuration..."
 
-    Invoke-ExternalCommand `
-        -Command "serena" `
-        -Arguments @("init")
+    try {
 
-    Write-Success "Serena global configuration initialized."
+        Invoke-ExternalCommand `
+            -Command "serena" `
+            -Arguments @("init")
+
+        Write-Success `
+            "Serena global configuration initialized."
+
+    }
+    catch {
+
+        Write-WarningMessage `
+            "Serena global initialization failed."
+
+        Write-WarningMessage `
+            "The project configuration is already initialized."
+
+        Write-WarningMessage `
+            "You may need to run 'serena init' manually after reviewing the Serena configuration."
+    }
 
 }
 else {
 
-    Write-Success "Serena global configuration already exists."
+    Write-Success `
+        "Serena global configuration already exists."
 }
 
 # ============================================================
@@ -834,7 +972,7 @@ else {
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 6 - CodeGraph"
+Write-Host " Stage 7 - CodeGraph"
 Write-Host "============================================================"
 Write-Host ""
 
@@ -855,7 +993,6 @@ if (-not (Test-Path ".codegraph") -or $Force) {
 else {
 
     Write-Success "CodeGraph already initialized."
-
 }
 
 # ============================================================
@@ -865,7 +1002,7 @@ else {
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 7 - Graphify Project"
+Write-Host " Stage 8 - Graphify Project"
 Write-Host "============================================================"
 Write-Host ""
 
@@ -926,7 +1063,7 @@ catch {
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 8 - OpenSpec"
+Write-Host " Stage 9 - OpenSpec"
 Write-Host "============================================================"
 Write-Host ""
 
@@ -948,7 +1085,6 @@ if (-not (Test-Path "openspec") -or $Force) {
 else {
 
     Write-Success "OpenSpec already initialized."
-
 }
 
 # ============================================================
@@ -958,7 +1094,7 @@ else {
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 9 - APM"
+Write-Host " Stage 10 - APM"
 Write-Host "============================================================"
 Write-Host ""
 
@@ -1003,7 +1139,7 @@ Write-Success "APM components installed."
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 10 - OpenSpec Update"
+Write-Host " Stage 11 - OpenSpec Update"
 Write-Host "============================================================"
 Write-Host ""
 
@@ -1046,6 +1182,7 @@ foreach ($Tool in $Tools) {
     if (Test-CommandExists $Tool) {
 
         try {
+
             $Version = switch ($Tool) {
 
                 "python" {
@@ -1128,7 +1265,7 @@ $Artifacts = @(
     ".codegraph",
     "openspec",
     ".kiro",
-    "external/dev-standards"
+    "external/ocp-excellence"
 )
 
 foreach ($Artifact in $Artifacts) {
@@ -1177,6 +1314,12 @@ Write-Host "  OpenSpec"
 
 Write-Host ""
 
+Write-Host "Git:"
+Write-Host "  OCP Excellence submodule"
+Write-Host "  external/ocp-excellence"
+
+Write-Host ""
+
 Write-Host "Log:"
 Write-Host "  $LogFile"
 
@@ -1197,7 +1340,6 @@ Write-Host "  4. Check APM:"
 Write-Host "     apm audit"
 Write-Host ""
 
-
 # ============================================================
 # OpenSpec Profile Configuration Hint
 # ============================================================
@@ -1210,6 +1352,7 @@ Write-Host ""
 
 Write-Host "OpenSpec supports different workflow profiles." -ForegroundColor Cyan
 Write-Host ""
+
 Write-Host "If you want to configure the Workflow Patterns / Expanded Mode"
 Write-Host "profile manually, run the following command from the project root:"
 Write-Host ""
@@ -1221,13 +1364,14 @@ Write-Host "NOTE:" -ForegroundColor Yellow
 Write-Host "This command is interactive and therefore is intentionally not"
 Write-Host "automatically configured by this bootstrap script."
 Write-Host ""
+
 Write-Host "After selecting the desired profile, run:"
 Write-Host ""
+
 Write-Host "    openspec update" -ForegroundColor White
 Write-Host ""
 
 Write-Host "============================================================" -ForegroundColor Yellow
 Write-Host ""
-
 
 Stop-Transcript | Out-Null
