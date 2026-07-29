@@ -1,3 +1,4 @@
+
 <#
 .SYNOPSIS
     AI Engineering Toolchain Bootstrap
@@ -21,6 +22,7 @@
 
     Project initialization:
       - Git submodules
+      - OCP Excellence -> Kiro Steering
       - Serena
       - CodeGraph
       - Graphify
@@ -69,8 +71,35 @@ $ProjectName = Split-Path $ProjectPath -Leaf
 $LogDirectory = Join-Path $ProjectPath "logs"
 $LogFile = Join-Path $LogDirectory "ai-stack-install.log"
 
-$DevStandardsRepository = "https://github.com/arcteryx-ocp/ocp-excellence.git"
-$DevStandardsPath = "external/ocp-excellence"
+$OcpExcellenceRepository = `
+    "https://github.com/arcteryx-ocp/ocp-excellence.git"
+
+$OcpExcellencePath = `
+    "external/ocp-excellence"
+
+$OcpExcellenceFullPath = `
+    Join-Path $ProjectPath $OcpExcellencePath
+
+$GitModulesFile = `
+    Join-Path $ProjectPath ".gitmodules"
+
+$SerenaDirectory = `
+    Join-Path $ProjectPath ".serena"
+
+$SerenaProjectFile = `
+    Join-Path $SerenaDirectory "project.yml"
+
+$SerenaGlobalDirectory = `
+    Join-Path $env:USERPROFILE ".serena"
+
+$SerenaGlobalConfig = `
+    Join-Path $SerenaGlobalDirectory "serena_config.yml"
+
+$KiroDirectory = `
+    Join-Path $ProjectPath ".kiro"
+
+$KiroSteeringDirectory = `
+    Join-Path $KiroDirectory "steering"
 
 $MinVersions = @{
     python = [version]"3.13.0"
@@ -100,25 +129,33 @@ Start-Transcript `
 # ============================================================
 
 function Write-Info {
-    param([string]$Message)
+    param(
+        [string]$Message
+    )
 
     Write-Host "[INFO] $Message" -ForegroundColor Cyan
 }
 
 function Write-Success {
-    param([string]$Message)
+    param(
+        [string]$Message
+    )
 
     Write-Host "[ OK ] $Message" -ForegroundColor Green
 }
 
 function Write-WarningMessage {
-    param([string]$Message)
+    param(
+        [string]$Message
+    )
 
     Write-Host "[WARN] $Message" -ForegroundColor Yellow
 }
 
 function Write-ErrorMessage {
-    param([string]$Message)
+    param(
+        [string]$Message
+    )
 
     Write-Host "[ERROR] $Message" -ForegroundColor Red
 }
@@ -129,7 +166,11 @@ function Test-CommandExists {
         [string]$Command
     )
 
-    return $null -ne (Get-Command $Command -ErrorAction SilentlyContinue)
+    return $null -ne (
+        Get-Command `
+            $Command `
+            -ErrorAction SilentlyContinue
+    )
 }
 
 function Invoke-ExternalCommand {
@@ -146,7 +187,9 @@ function Invoke-ExternalCommand {
     & $Command @Arguments
 
     if ($LASTEXITCODE -ne 0) {
-        throw "Command failed: $Command $($Arguments -join ' ') ExitCode=$LASTEXITCODE"
+
+        throw `
+            "Command failed: $Command $($Arguments -join ' ') ExitCode=$LASTEXITCODE"
     }
 }
 
@@ -159,24 +202,36 @@ function Get-ToolVersion {
     switch ($Tool) {
 
         "python" {
-            return (python --version 2>&1).ToString().Split(" ")[1]
+            return (
+                python --version 2>&1
+            ).ToString().Split(" ")[1]
         }
 
         "node" {
-            return (node --version).ToString().TrimStart("v")
+            return (
+                node --version
+            ).ToString().TrimStart("v")
         }
 
         "npm" {
-            return (npm --version 2>&1).ToString().Trim()
+            return (
+                npm --version 2>&1
+            ).ToString().Trim()
         }
 
         "git" {
-            $value = (git --version 2>&1).ToString()
+            $value = (
+                git --version 2>&1
+            ).ToString()
+
             return $value.Split(" ")[2]
         }
 
         "uv" {
-            $value = (uv --version 2>&1).ToString()
+            $value = (
+                uv --version 2>&1
+            ).ToString()
+
             return $value.Split(" ")[1]
         }
 
@@ -196,20 +251,27 @@ function Test-ToolVersion {
     )
 
     if (-not (Test-CommandExists $Tool)) {
-        throw "$Tool is not installed or is not available in PATH."
+
+        throw `
+            "$Tool is not installed or is not available in PATH."
     }
 
     $versionString = Get-ToolVersion $Tool
 
     if ($versionString -match '^(\d+\.\d+\.\d+)') {
+
         $version = [version]$Matches[1]
     }
     else {
-        throw "Unable to parse $Tool version: $versionString"
+
+        throw `
+            "Unable to parse $Tool version: $versionString"
     }
 
     if ($version -lt $MinimumVersion) {
-        throw "$Tool version $version is below required version $MinimumVersion."
+
+        throw `
+            "$Tool version $version is below required version $MinimumVersion."
     }
 
     Write-Success "$Tool $version OK"
@@ -222,10 +284,19 @@ function Test-NpmPackageInstalled {
     )
 
     try {
-        npm list -g $Package --depth=0 2>$null | Out-Null
+
+        npm list `
+            -g `
+            $Package `
+            --depth=0 `
+            2>$null |
+            Out-Null
+
         return $LASTEXITCODE -eq 0
+
     }
     catch {
+
         return $false
     }
 }
@@ -236,7 +307,11 @@ function Install-NpmPackage {
         [string]$Package
     )
 
-    if ((Test-NpmPackageInstalled $Package) -and -not $Force) {
+    if (
+        (Test-NpmPackageInstalled $Package) `
+        -and `
+        -not $Force
+    ) {
 
         Write-Success "$Package already installed."
 
@@ -254,6 +329,85 @@ function Install-NpmPackage {
         )
 
     Write-Success "$Package installed."
+}
+
+function Test-SerenaProjectConfig {
+    param(
+        [Parameter(Mandatory)]
+        [string]$ConfigFile
+    )
+
+    if (-not (Test-Path $ConfigFile)) {
+
+        return $false
+    }
+
+    try {
+
+        $Content = `
+            Get-Content `
+                $ConfigFile `
+                -Raw `
+                -ErrorAction Stop
+
+        if (
+            [string]::IsNullOrWhiteSpace($Content)
+        ) {
+
+            return $false
+        }
+
+        if (
+            $Content -notmatch "(?m)^languages\s*:"
+        ) {
+
+            return $false
+        }
+
+        return $true
+
+    }
+    catch {
+
+        return $false
+    }
+}
+
+function Test-GitSubmoduleRegistered {
+    param(
+        [Parameter(Mandatory)]
+        [string]$SubmodulePath
+    )
+
+    if (-not (Test-Path $GitModulesFile)) {
+
+        return $false
+    }
+
+    $PathValue = `
+        git config `
+            --file .gitmodules `
+            --get-regexp `
+            "^submodule\..*\.path$" `
+            2>$null
+
+    if (-not $PathValue) {
+
+        return $false
+    }
+
+    foreach ($Line in $PathValue) {
+
+        if (
+            $Line -match `
+                "\s+$([regex]::Escape($SubmodulePath))$"
+        ) {
+
+            return $true
+        }
+    }
+
+    return $false
 }
 
 # ============================================================
@@ -275,20 +429,73 @@ Write-Host "Log     : $LogFile"
 Write-Host ""
 
 # ============================================================
+# Stage 0
 # Validate project
 # ============================================================
+
+Write-Host ""
+Write-Host "============================================================"
+Write-Host " Stage 0 - Project Validation"
+Write-Host "============================================================"
+Write-Host ""
 
 Write-Info "Validating project..."
 
 if (-not (Test-Path $ProjectPath)) {
-    throw "Project path does not exist: $ProjectPath"
+
+    throw `
+        "Project path does not exist: $ProjectPath"
 }
 
-if (-not (Test-Path (Join-Path $ProjectPath ".git"))) {
-    throw "Target directory is not a Git repository: $ProjectPath"
+if (
+    -not (
+        Test-Path `
+            (Join-Path $ProjectPath ".git")
+    )
+) {
+
+    throw `
+        "Target directory is not a Git repository: $ProjectPath"
 }
 
 Set-Location $ProjectPath
+
+$GitRoot = `
+    (
+        git rev-parse --show-toplevel 2>$null
+    ).Trim()
+
+if (
+    $LASTEXITCODE -ne 0 `
+    -or `
+    [string]::IsNullOrWhiteSpace($GitRoot)
+) {
+
+    throw `
+        "Unable to determine Git repository root."
+}
+
+$GitRoot = `
+    [System.IO.Path]::GetFullPath($GitRoot)
+
+if (
+    $GitRoot.TrimEnd('\') `
+    -ne `
+    $ProjectPath.TrimEnd('\')
+) {
+
+    throw @"
+The specified ProjectPath is not the Git repository root.
+
+ProjectPath:
+$ProjectPath
+
+Git root:
+$GitRoot
+
+Run the script using the repository root as ProjectPath.
+"@
+}
 
 Write-Success "Git repository validated."
 
@@ -315,12 +522,21 @@ foreach ($Tool in $MinVersions.Keys) {
 # Install uv if missing
 # ============================================================
 
+Write-Host ""
+Write-Host "============================================================"
+Write-Host " Stage 2 - Base Tooling"
+Write-Host "============================================================"
+Write-Host ""
+
 if (-not (Test-CommandExists "uv")) {
 
     Write-Info "uv is not installed."
+
     Write-Info "Installing uv..."
 
-    irm https://astral.sh/uv/install.ps1 | iex
+    irm `
+        https://astral.sh/uv/install.ps1 |
+        iex
 
     $env:Path = `
         [System.Environment]::GetEnvironmentVariable(
@@ -333,20 +549,30 @@ if (-not (Test-CommandExists "uv")) {
         )
 
     if (-not (Test-CommandExists "uv")) {
-        throw "uv was installed but is not available in PATH. Restart PowerShell and run the script again."
+
+        throw @"
+uv was installed but is not available in PATH.
+
+Restart PowerShell and run the script again.
+"@
     }
 
     Write-Success "uv installed."
+
+}
+else {
+
+    Write-Success "uv already installed."
 }
 
 # ============================================================
 # Stage 3
-# Global AI tools
+# Global AI Tools
 # ============================================================
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 2 - Global AI Tools"
+Write-Host " Stage 3 - Global AI Tools"
 Write-Host "============================================================"
 Write-Host ""
 
@@ -354,14 +580,18 @@ Write-Host ""
 # Serena
 # ------------------------------------------------------------
 
-if ((Test-CommandExists "serena") -and -not $Force) {
+if (
+    (Test-CommandExists "serena") `
+    -and `
+    -not $Force
+) {
 
     Write-Success "Serena already installed."
 
 }
 else {
 
-    Write-Info "Installing Serena..."
+    Write-Info "Installing/upgrading Serena..."
 
     Invoke-ExternalCommand `
         -Command "uv" `
@@ -380,7 +610,11 @@ else {
 # Graphify
 # ------------------------------------------------------------
 
-if ((Test-CommandExists "graphify") -and -not $Force) {
+if (
+    (Test-CommandExists "graphify") `
+    -and `
+    -not $Force
+) {
 
     Write-Success "Graphify already installed."
 
@@ -396,6 +630,8 @@ else {
             "install",
             "graphify"
         )
+
+    Write-Info "Installing Graphify Windows integration..."
 
     Invoke-ExternalCommand `
         -Command "graphify" `
@@ -430,7 +666,11 @@ Install-NpmPackage "openspecui"
 # CodeGraph
 # ------------------------------------------------------------
 
-if ((Test-CommandExists "codegraph") -and -not $Force) {
+if (
+    (Test-CommandExists "codegraph") `
+    -and `
+    -not $Force
+) {
 
     Write-Success "CodeGraph already installed."
 
@@ -440,8 +680,9 @@ else {
     Write-Info "Installing CodeGraph..."
 
     Invoke-Expression `
-        (Invoke-RestMethod `
-            "https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.ps1"
+        (
+            Invoke-RestMethod `
+                "https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.ps1"
         )
 
     Write-Success "CodeGraph installation completed."
@@ -454,7 +695,7 @@ else {
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 3 - Graphify Integrations"
+Write-Host " Stage 4 - Graphify Integrations"
 Write-Host "============================================================"
 Write-Host ""
 
@@ -470,6 +711,9 @@ if (Test-CommandExists "graphify") {
                 "claude",
                 "install"
             )
+
+        Write-Success `
+            "Graphify Claude integration installed."
 
     }
     catch {
@@ -489,6 +733,9 @@ if (Test-CommandExists "graphify") {
                 "install"
             )
 
+        Write-Success `
+            "Graphify Cursor integration installed."
+
     }
     catch {
 
@@ -497,193 +744,118 @@ if (Test-CommandExists "graphify") {
     }
 }
 
-
 # ============================================================
-# Stage 4
+# Stage 5
 # Git Submodules
 # ============================================================
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 4 - Git Submodules"
+Write-Host " Stage 5 - Git Submodules"
 Write-Host "============================================================"
 Write-Host ""
 
-$DevStandardsRepository = `
-    "https://github.com/arcteryx-ocp/ocp-excellence.git"
-
-$DevStandardsPath = `
-    "external/ocp-excellence"
-
-$GitModulesFile = `
-    Join-Path $ProjectPath ".gitmodules"
-
-$DevStandardsFullPath = `
-    Join-Path $ProjectPath $DevStandardsPath
+Write-Info "Configuring OCP Excellence Git submodule..."
 
 # ------------------------------------------------------------
-# Validate Git repository
+# Check unresolved conflicts
 # ------------------------------------------------------------
 
-Write-Info "Validating Git repository..."
-
-$GitRoot = `
-    (git rev-parse --show-toplevel 2>$null).Trim()
-
-if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($GitRoot)) {
-    throw "Unable to determine Git repository root."
-}
-
-$GitRoot = [System.IO.Path]::GetFullPath($GitRoot)
-
-if ($GitRoot.TrimEnd('\') -ne $ProjectPath.TrimEnd('\')) {
-
-    Write-WarningMessage `
-        "ProjectPath is not the Git repository root."
-
-    Write-Host "ProjectPath : $ProjectPath"
-    Write-Host "Git root    : $GitRoot"
-
-    Write-Info "Switching to Git repository root..."
-
-    Set-Location $GitRoot
-
-    $ProjectPath = $GitRoot
-}
-
-Write-Success "Git repository root validated."
-
-# ------------------------------------------------------------
-# Check Git status
-# ------------------------------------------------------------
-
-Write-Info "Checking Git status..."
-
-$GitStatus = `
-    git status --short --untracked-files=all
+$UnmergedFiles = `
+    git diff --name-only --diff-filter=U
 
 if ($LASTEXITCODE -ne 0) {
-    throw "Unable to read Git status."
+
+    throw `
+        "Unable to check Git merge conflicts."
 }
 
-if ($GitStatus) {
+if ($UnmergedFiles) {
 
-    Write-Info "Current Git changes:"
+    Write-ErrorMessage `
+        "Git contains unresolved merge conflicts:"
 
-    $GitStatus | ForEach-Object {
+    $UnmergedFiles | ForEach-Object {
+
         Write-Host "  $_"
     }
 
-}
-else {
+    if (
+        $UnmergedFiles -contains ".gitmodules"
+    ) {
 
-    Write-Success "Git working tree is clean."
+        throw @"
+.gitmodules has an unresolved merge conflict.
 
+Resolve the conflict first.
+
+Then run:
+
+    git add .gitmodules
+
+After that run this bootstrap again.
+"@
+    }
+
+    throw `
+        "Resolve all Git merge conflicts before running the bootstrap."
 }
 
 # ------------------------------------------------------------
-# Check .gitmodules
+# Handle .gitmodules missing from working tree
 # ------------------------------------------------------------
 
-Write-Info "Checking .gitmodules..."
+$GitModulesTracked = `
+    git ls-files `
+        --error-unmatch `
+        .gitmodules `
+        2>$null
 
-if (Test-Path $GitModulesFile) {
+if (
+    $LASTEXITCODE -eq 0 `
+    -and `
+    -not (Test-Path $GitModulesFile)
+) {
 
-    Write-Success ".gitmodules exists."
+    Write-WarningMessage `
+        ".gitmodules is tracked but missing from working tree."
 
-}
-else {
+    if ($Force) {
 
-    Write-Info ".gitmodules does not exist."
+        Write-Info `
+            "Force mode enabled. Restoring .gitmodules..."
 
-    # Check whether Git already has .gitmodules
-    $GitModulesInIndex = `
-        git ls-files --error-unmatch .gitmodules 2>$null
+        Invoke-ExternalCommand `
+            -Command "git" `
+            -Arguments @(
+                "restore",
+                "--source=HEAD",
+                "--",
+                ".gitmodules"
+            )
 
-    if ($LASTEXITCODE -eq 0) {
+    }
+    else {
 
-        Write-WarningMessage `
-            ".gitmodules exists in Git index/HEAD but not in working tree."
-
-        if ($Force) {
-
-            Write-Info `
-                "Force mode enabled. Restoring .gitmodules..."
-
-            Invoke-ExternalCommand `
-                -Command "git" `
-                -Arguments @(
-                    "restore",
-                    "--source=HEAD",
-                    "--",
-                    ".gitmodules"
-                )
-
-        }
-        else {
-
-            throw @"
+        throw @"
 .gitmodules is tracked by Git but missing from the working tree.
 
 Run:
 
     git restore .gitmodules
 
-or run the bootstrap using:
+or:
 
     .\setup.ps1 -Force
 "@
-
-        }
-
     }
 }
 
 # ------------------------------------------------------------
-# Check for unresolved merge conflicts
-# ------------------------------------------------------------
-
-Write-Info "Checking for Git merge conflicts..."
-
-$UnmergedFiles = `
-    git diff --name-only --diff-filter=U
-
-if ($LASTEXITCODE -ne 0) {
-    throw "Unable to check Git merge conflicts."
-}
-
-if ($UnmergedFiles) {
-
-    Write-ErrorMessage "Git contains unresolved merge conflicts:"
-
-    $UnmergedFiles | ForEach-Object {
-        Write-Host "  $_"
-    }
-
-    if ($UnmergedFiles -contains ".gitmodules") {
-
-        throw @"
-.gitmodules has an unresolved merge conflict.
-
-Resolve the conflict before running the bootstrap.
-
-After resolving it:
-
-    git add .gitmodules
-
-Then run the bootstrap again.
-"@
-
-    }
-}
-
-# ------------------------------------------------------------
-# Validate .gitmodules state
+# Handle empty .gitmodules
 # ------------------------------------------------------------
 
 if (Test-Path $GitModulesFile) {
-
-    Write-Info "Validating .gitmodules..."
 
     $GitModulesContent = `
         Get-Content `
@@ -691,88 +863,79 @@ if (Test-Path $GitModulesFile) {
             -Raw `
             -ErrorAction Stop
 
-    if ([string]::IsNullOrWhiteSpace($GitModulesContent)) {
+    if (
+        [string]::IsNullOrWhiteSpace(
+            $GitModulesContent
+        )
+    ) {
 
         Write-WarningMessage `
             ".gitmodules exists but is empty."
 
         if ($Force) {
 
-            Write-Info `
-                "Force mode enabled. Recreating .gitmodules..."
-
             Remove-Item `
                 -Force `
                 $GitModulesFile
+
         }
         else {
 
             throw @"
 .gitmodules exists but is empty.
 
-Delete it or run:
+Remove it or run:
 
     .\setup.ps1 -Force
 "@
-
         }
     }
 }
 
 # ------------------------------------------------------------
-# Check whether submodule is already registered
+# Create external directory
 # ------------------------------------------------------------
 
-Write-Info "Checking existing submodule configuration..."
+$ExternalDirectory = `
+    Join-Path $ProjectPath "external"
 
-$ExistingSubmodule = `
-    git config --file .gitmodules `
-        --get-regexp `
-        "^submodule\..*\.path$" `
-        2>$null
+if (-not (Test-Path $ExternalDirectory)) {
 
-if ($ExistingSubmodule) {
+    Write-Info "Creating external directory..."
 
-    Write-Info "Existing submodule configuration found:"
-
-    $ExistingSubmodule | ForEach-Object {
-        Write-Host "  $_"
-    }
-
+    New-Item `
+        -ItemType Directory `
+        -Path $ExternalDirectory `
+        -Force |
+        Out-Null
 }
 
 # ------------------------------------------------------------
-# Check exact submodule path
+# Check existing submodule
 # ------------------------------------------------------------
 
-$ExistingPath = `
-    git config `
-        --file .gitmodules `
-        --get-regexp `
-        "^submodule\..*\.path$" `
-        2>$null |
-    Where-Object {
-        $_ -match "\s+$([regex]::Escape($DevStandardsPath))$"
-    }
+$SubmoduleRegistered = `
+    Test-GitSubmoduleRegistered `
+        -SubmodulePath $OcpExcellencePath
 
-if ($ExistingPath) {
+if ($SubmoduleRegistered) {
 
     Write-Success `
-        "OCP Excellence is already registered in .gitmodules."
+        "OCP Excellence is already registered as a Git submodule."
 
 }
 else {
 
     # --------------------------------------------------------
-    # Remove stale directory if Force is enabled
+    # Check stale target directory
     # --------------------------------------------------------
 
-    if (Test-Path $DevStandardsFullPath) {
+    if (Test-Path $OcpExcellenceFullPath) {
 
         Write-WarningMessage `
-            "Target submodule directory already exists:"
+            "Target directory already exists:"
 
-        Write-Host "  $DevStandardsFullPath"
+        Write-Host "  $OcpExcellenceFullPath"
 
         if ($Force) {
 
@@ -782,7 +945,7 @@ else {
             Remove-Item `
                 -Recurse `
                 -Force `
-                $DevStandardsFullPath
+                $OcpExcellenceFullPath
 
         }
         else {
@@ -790,33 +953,13 @@ else {
             throw @"
 The target submodule directory already exists:
 
-$DevStandardsFullPath
+$OcpExcellenceFullPath
 
-If this directory is not an existing Git submodule, remove it
-or run the bootstrap with:
+If it is not a valid Git submodule, remove it or run:
 
     .\setup.ps1 -Force
 "@
-
         }
-    }
-
-    # --------------------------------------------------------
-    # Create external directory
-    # --------------------------------------------------------
-
-    $ExternalDirectory = `
-        Join-Path $ProjectPath "external"
-
-    if (-not (Test-Path $ExternalDirectory)) {
-
-        Write-Info "Creating external directory..."
-
-        New-Item `
-            -ItemType Directory `
-            -Path $ExternalDirectory `
-            -Force |
-            Out-Null
     }
 
     # --------------------------------------------------------
@@ -830,20 +973,19 @@ or run the bootstrap with:
         -Arguments @(
             "submodule",
             "add",
-            $DevStandardsRepository,
-            $DevStandardsPath
+            $OcpExcellenceRepository,
+            $OcpExcellencePath
         )
 
     Write-Success `
         "OCP Excellence submodule added."
-
 }
 
 # ------------------------------------------------------------
-# Initialize/update submodules
+# Sync submodule
 # ------------------------------------------------------------
 
-Write-Info "Initializing Git submodules..."
+Write-Info "Synchronizing Git submodules..."
 
 Invoke-ExternalCommand `
     -Command "git" `
@@ -852,6 +994,8 @@ Invoke-ExternalCommand `
         "sync",
         "--recursive"
     )
+
+Write-Info "Initializing Git submodules..."
 
 Invoke-ExternalCommand `
     -Command "git" `
@@ -862,69 +1006,43 @@ Invoke-ExternalCommand `
         "--recursive"
     )
 
-Write-Success `
-    "Git submodules initialized."
-
 # ------------------------------------------------------------
-# Verify submodule
+# Verify
 # ------------------------------------------------------------
 
-Write-Info "Verifying OCP Excellence submodule..."
-
-if (-not (Test-Path $DevStandardsFullPath)) {
+if (-not (Test-Path $OcpExcellenceFullPath)) {
 
     throw @"
-OCP Excellence submodule was registered but its directory was not found:
+OCP Excellence submodule was registered but its directory does not exist:
 
-$DevStandardsFullPath
+$OcpExcellenceFullPath
 "@
-
 }
 
 $SubmoduleStatus = `
     git submodule status `
-        -- $DevStandardsPath
-
-if ($LASTEXITCODE -ne 0) {
-
-    throw `
-        "Unable to verify OCP Excellence submodule."
-
-}
+        -- $OcpExcellencePath
 
 Write-Host ""
-Write-Host "OCP Excellence submodule:"
-Write-Host "  Repository : $DevStandardsRepository"
-Write-Host "  Path       : $DevStandardsPath"
+Write-Host "OCP Excellence:"
+Write-Host "  Repository : $OcpExcellenceRepository"
+Write-Host "  Path       : $OcpExcellencePath"
 Write-Host "  Status     : $SubmoduleStatus"
 Write-Host ""
 
 Write-Success `
-    "OCP Excellence submodule configured successfully."
-
+    "Git submodule configured successfully."
 
 # ============================================================
-# Stage 5
-# OCP Excellence -> Kiro Steering Files
+# Stage 6
+# OCP Excellence -> Kiro Steering
 # ============================================================
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 5 - OCP Excellence Steering Files"
+Write-Host " Stage 6 - OCP Excellence -> Kiro Steering"
 Write-Host "============================================================"
 Write-Host ""
-
-$OcpExcellenceRepository = `
-    $DevStandardsRepository
-
-$OcpExcellencePath = `
-    $SubmoduleFullPath
-
-$KiroDirectory = `
-    Join-Path $ProjectPath ".kiro"
-
-$KiroSteeringDirectory = `
-    Join-Path $KiroDirectory "steering"
 
 # ------------------------------------------------------------
 # Create Kiro directories
@@ -943,7 +1061,8 @@ if (-not (Test-Path $KiroDirectory)) {
 
 if (-not (Test-Path $KiroSteeringDirectory)) {
 
-    Write-Info "Creating .kiro/steering directory..."
+    Write-Info `
+        "Creating .kiro/steering directory..."
 
     New-Item `
         -ItemType Directory `
@@ -956,14 +1075,15 @@ if (-not (Test-Path $KiroSteeringDirectory)) {
 # Locate steering files
 # ------------------------------------------------------------
 
-Write-Info "Searching OCP Excellence for Kiro steering files..."
+Write-Info `
+    "Searching OCP Excellence for Kiro steering files..."
 
 $SteeringSources = @()
 
 $PotentialSteeringDirectories = @(
-    (Join-Path $OcpExcellencePath ".kiro\steering"),
-    (Join-Path $OcpExcellencePath "steering"),
-    (Join-Path $OcpExcellencePath "docs\steering")
+    (Join-Path $OcpExcellenceFullPath ".kiro\steering"),
+    (Join-Path $OcpExcellenceFullPath "steering"),
+    (Join-Path $OcpExcellenceFullPath "docs\steering")
 )
 
 foreach ($Directory in $PotentialSteeringDirectories) {
@@ -986,11 +1106,6 @@ if ($SteeringSources.Count -eq 0) {
     Write-WarningMessage `
         "No known steering directory was found in OCP Excellence."
 
-    Write-WarningMessage `
-        "Repository available at:"
-
-    Write-Host "  $OcpExcellencePath"
-
 }
 else {
 
@@ -1006,17 +1121,18 @@ else {
             -Force
 
         Write-Success `
-            "Steering files copied to .kiro/steering"
+            "Steering files copied to .kiro/steering."
     }
 }
 
 # ------------------------------------------------------------
-# List installed steering files
+# List steering files
 # ------------------------------------------------------------
 
 if (Test-Path $KiroSteeringDirectory) {
 
-    Write-Info "Installed Kiro steering files:"
+    Write-Info `
+        "Installed Kiro steering files:"
 
     Get-ChildItem `
         $KiroSteeringDirectory `
@@ -1033,41 +1149,43 @@ if (Test-Path $KiroSteeringDirectory) {
         }
 }
 
-Write-Success "OCP Excellence steering setup completed."
+Write-Success `
+    "OCP Excellence steering setup completed."
 
 # ============================================================
-# Stage 6
-# Serena project
+# Stage 7
+# Serena Project
 # ============================================================
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 6 - Serena Project"
+Write-Host " Stage 7 - Serena Project"
 Write-Host "============================================================"
 Write-Host ""
 
-Write-Info "Initializing Serena project: $ProjectName"
-
-$SerenaDirectory = Join-Path $ProjectPath ".serena"
-$SerenaProjectFile = Join-Path $SerenaDirectory "project.yml"
+Write-Info `
+    "Initializing Serena project: $ProjectName"
 
 # ------------------------------------------------------------
-# Validate existing Serena project
+# Existing project validation
 # ------------------------------------------------------------
 
 if (Test-Path $SerenaProjectFile) {
 
-    Write-Info "Existing Serena project found:"
+    Write-Info `
+        "Existing Serena project found:"
+
     Write-Host "  $SerenaProjectFile"
 
-    $SerenaConfig = Get-Content `
-        $SerenaProjectFile `
-        -Raw
-
-    if ($SerenaConfig -notmatch "(?m)^languages\s*:") {
+    if (
+        -not (
+            Test-SerenaProjectConfig `
+                -ConfigFile $SerenaProjectFile
+        )
+    ) {
 
         Write-WarningMessage `
-            "Serena project.yml is missing the required 'languages' property."
+            "Serena project.yml is invalid or missing 'languages'."
 
         if ($Force) {
 
@@ -1078,6 +1196,7 @@ if (Test-Path $SerenaProjectFile) {
                 -Recurse `
                 -Force `
                 $SerenaDirectory
+
         }
         else {
 
@@ -1087,9 +1206,10 @@ Invalid Serena project configuration.
 File:
 $SerenaProjectFile
 
-The configuration does not contain the required 'languages' property.
+The configuration does not contain the required 'languages'
+property.
 
-Run the bootstrap again using:
+Run:
 
     .\setup.ps1 -Force
 "@
@@ -1103,71 +1223,60 @@ Run the bootstrap again using:
 
 if (-not (Test-Path $SerenaProjectFile)) {
 
-    Write-Info "Creating Serena project..."
+    Write-Info `
+        "Creating Serena project..."
 
-    try {
+    Invoke-ExternalCommand `
+        -Command "serena" `
+        -Arguments @(
+            "project",
+            "create",
+            "--name",
+            $ProjectName
+        )
 
-        Invoke-ExternalCommand `
-            -Command "serena" `
-            -Arguments @(
-                "project",
-                "create",
-                "--name",
-                $ProjectName
-            )
-
-        Write-Success "Serena project created."
-
-    }
-    catch {
-
-        Write-WarningMessage `
-            "Serena project create failed."
-
-        Write-WarningMessage `
-            "Serena may require a project configuration with languages."
-
-        throw
-    }
-
+    Write-Success `
+        "Serena project created."
 }
 else {
 
-    Write-Success "Serena project already exists."
+    Write-Success `
+        "Serena project already exists."
 }
 
 # ------------------------------------------------------------
-# Validate Serena project configuration
+# Validate project configuration
 # ------------------------------------------------------------
 
-if (-not (Test-Path $SerenaProjectFile)) {
-
-    throw "Serena project.yml was not created: $SerenaProjectFile"
-}
-
-$SerenaConfig = Get-Content `
-    $SerenaProjectFile `
-    -Raw
-
-if ($SerenaConfig -notmatch "(?m)^languages\s*:") {
+if (
+    -not (
+        Test-SerenaProjectConfig `
+            -ConfigFile $SerenaProjectFile
+    )
+) {
 
     throw @"
-Serena project.yml was created but does not contain 'languages'.
+Serena project was created but project.yml is invalid.
 
-File:
+Expected file:
+
 $SerenaProjectFile
 
-Please configure the project manually before indexing.
+The file must contain:
+
+languages:
+  - ...
+
+Check the Serena version and project configuration.
 "@
 }
 
-Write-Success "Serena project configuration validated."
-
 # ------------------------------------------------------------
-# Index Serena project
+# Index project
 # ------------------------------------------------------------
 
-Write-Info "Indexing Serena project..."
+Write-Info `
+    "Indexing Serena project..."
 
 Invoke-ExternalCommand `
     -Command "serena" `
@@ -1176,47 +1285,33 @@ Invoke-ExternalCommand `
         "index"
     )
 
-Write-Success "Serena project indexed successfully."
+Write-Success `
+    "Serena project indexed successfully."
 
 # ============================================================
-# Serena global initialization
+# Stage 8
+# Serena Global Configuration
 # ============================================================
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Serena Global Configuration"
+Write-Host " Stage 8 - Serena Global Configuration"
 Write-Host "============================================================"
 Write-Host ""
-
-$SerenaGlobalConfig = Join-Path `
-    $env:USERPROFILE `
-    ".serena\serena_config.yml"
 
 if (-not (Test-Path $SerenaGlobalConfig)) {
 
-    Write-Info "Initializing Serena global configuration..."
+    Write-Info `
+        "Initializing Serena global configuration..."
 
-    try {
+    Invoke-ExternalCommand `
+        -Command "serena" `
+        -Arguments @(
+            "init"
+        )
 
-        Invoke-ExternalCommand `
-            -Command "serena" `
-            -Arguments @("init")
-
-        Write-Success `
-            "Serena global configuration initialized."
-
-    }
-    catch {
-
-        Write-WarningMessage `
-            "Serena global initialization failed."
-
-        Write-WarningMessage `
-            "The project configuration is already initialized."
-
-        Write-WarningMessage `
-            "You may need to run 'serena init' manually after reviewing the Serena configuration."
-    }
+    Write-Success `
+        "Serena global configuration initialized."
 
 }
 else {
@@ -1226,19 +1321,24 @@ else {
 }
 
 # ============================================================
-# Stage 7
-# CodeGraph initialization
+# Stage 9
+# CodeGraph
 # ============================================================
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 7 - CodeGraph"
+Write-Host " Stage 9 - CodeGraph"
 Write-Host "============================================================"
 Write-Host ""
 
-if (-not (Test-Path ".codegraph") -or $Force) {
+if (
+    -not (Test-Path ".codegraph") `
+    -or `
+    $Force
+) {
 
-    Write-Info "Initializing CodeGraph..."
+    Write-Info `
+        "Initializing CodeGraph..."
 
     Invoke-ExternalCommand `
         -Command "codegraph" `
@@ -1247,34 +1347,40 @@ if (-not (Test-Path ".codegraph") -or $Force) {
             "-i"
         )
 
-    Write-Success "CodeGraph initialized."
+    Write-Success `
+        "CodeGraph initialized."
 
 }
 else {
 
-    Write-Success "CodeGraph already initialized."
+    Write-Success `
+        "CodeGraph already initialized."
 }
 
 # ============================================================
-# Stage 8
-# Graphify project
+# Stage 10
+# Graphify Project
 # ============================================================
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 8 - Graphify Project"
+Write-Host " Stage 10 - Graphify Project"
 Write-Host "============================================================"
 Write-Host ""
 
-Write-Info "Running Graphify..."
+Write-Info `
+    "Running Graphify..."
 
 try {
 
     Invoke-ExternalCommand `
         -Command "graphify" `
-        -Arguments @(".")
+        -Arguments @(
+            "."
+        )
 
-    Write-Success "Graphify extraction completed."
+    Write-Success `
+        "Graphify extraction completed."
 
 }
 catch {
@@ -1296,7 +1402,12 @@ catch {
     Write-Host "  DEEPSEEK_API_KEY"
 }
 
-Write-Info "Installing Graphify hook..."
+# ------------------------------------------------------------
+# Graphify hook
+# ------------------------------------------------------------
+
+Write-Info `
+    "Installing Graphify hook..."
 
 try {
 
@@ -1307,7 +1418,8 @@ try {
             "install"
         )
 
-    Write-Success "Graphify hook installed."
+    Write-Success `
+        "Graphify hook installed."
 
 }
 catch {
@@ -1317,19 +1429,24 @@ catch {
 }
 
 # ============================================================
-# Stage 9
+# Stage 11
 # OpenSpec
 # ============================================================
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 9 - OpenSpec"
+Write-Host " Stage 11 - OpenSpec"
 Write-Host "============================================================"
 Write-Host ""
 
-if (-not (Test-Path "openspec") -or $Force) {
+if (
+    -not (Test-Path "openspec") `
+    -or `
+    $Force
+) {
 
-    Write-Info "Initializing OpenSpec for Kiro..."
+    Write-Info `
+        "Initializing OpenSpec for Kiro..."
 
     Invoke-ExternalCommand `
         -Command "openspec" `
@@ -1339,22 +1456,24 @@ if (-not (Test-Path "openspec") -or $Force) {
             "kiro"
         )
 
-    Write-Success "OpenSpec initialized."
+    Write-Success `
+        "OpenSpec initialized."
 
 }
 else {
 
-    Write-Success "OpenSpec already initialized."
+    Write-Success `
+        "OpenSpec already initialized."
 }
 
 # ============================================================
-# Stage 10
+# Stage 12
 # APM
 # ============================================================
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 10 - APM"
+Write-Host " Stage 12 - APM"
 Write-Host "============================================================"
 Write-Host ""
 
@@ -1371,16 +1490,19 @@ if (-not (Test-CommandExists "apm")) {
     Write-Host "  npm install -g @microsoft/apm"
     Write-Host ""
 
-    throw "APM command not found."
+    throw `
+        "APM command not found."
 }
 
-Write-Success "APM detected."
+Write-Success `
+    "APM detected."
 
 # ------------------------------------------------------------
 # Install APM components for Kiro
 # ------------------------------------------------------------
 
-Write-Info "Installing APM package for Kiro..."
+Write-Info `
+    "Installing APM package for Kiro..."
 
 Invoke-ExternalCommand `
     -Command "apm" `
@@ -1390,35 +1512,40 @@ Invoke-ExternalCommand `
         "kiro"
     )
 
-Write-Success "APM components installed."
+Write-Success `
+    "APM components installed."
 
 # ============================================================
-# Stage 11
-# OpenSpec update
+# Stage 13
+# OpenSpec Update
 # ============================================================
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 11 - OpenSpec Update"
+Write-Host " Stage 13 - OpenSpec Update"
 Write-Host "============================================================"
 Write-Host ""
 
-Write-Info "Updating OpenSpec..."
+Write-Info `
+    "Updating OpenSpec..."
 
 Invoke-ExternalCommand `
     -Command "openspec" `
-    -Arguments @("update")
+    -Arguments @(
+        "update"
+    )
 
-Write-Success "OpenSpec updated."
+Write-Success `
+    "OpenSpec updated."
 
 # ============================================================
-# Stage 12
-# Final verification
+# Stage 14
+# Final Verification
 # ============================================================
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Final Verification"
+Write-Host " Stage 14 - Final Verification"
 Write-Host "============================================================"
 Write-Host ""
 
@@ -1465,47 +1592,26 @@ foreach ($Tool in $Tools) {
                     uv --version
                 }
 
-                "serena" {
-                    "installed"
-                }
-
-                "graphify" {
-                    "installed"
-                }
-
-                "codeburn" {
-                    "installed"
-                }
-
-                "openspec" {
-                    "installed"
-                }
-
-                "openspecui" {
-                    "installed"
-                }
-
-                "codegraph" {
-                    "installed"
-                }
-
-                "apm" {
+                default {
                     "installed"
                 }
             }
 
-            Write-Success "$Tool : $Version"
+            Write-Success `
+                "$Tool : $Version"
 
         }
         catch {
 
-            Write-Success "$Tool : installed"
+            Write-Success `
+                "$Tool : installed"
         }
 
     }
     else {
 
-        Write-WarningMessage "$Tool : NOT FOUND"
+        Write-WarningMessage `
+            "$Tool : NOT FOUND"
     }
 }
 
@@ -1525,6 +1631,7 @@ $Artifacts = @(
     ".codegraph",
     "openspec",
     ".kiro",
+    ".serena",
     "external/ocp-excellence"
 )
 
@@ -1532,13 +1639,52 @@ foreach ($Artifact in $Artifacts) {
 
     if (Test-Path $Artifact) {
 
-        Write-Success $Artifact
+        Write-Success `
+            $Artifact
 
     }
     else {
 
-        Write-WarningMessage "$Artifact not found."
+        Write-WarningMessage `
+            "$Artifact not found."
     }
+}
+
+# ============================================================
+# Verify Git Submodule
+# ============================================================
+
+Write-Host ""
+Write-Host "============================================================"
+Write-Host " Git Submodule Verification"
+Write-Host "============================================================"
+Write-Host ""
+
+if (
+    Test-GitSubmoduleRegistered `
+        -SubmodulePath $OcpExcellencePath
+) {
+
+    Write-Success `
+        "OCP Excellence registered in .gitmodules."
+
+}
+else {
+
+    Write-WarningMessage `
+        "OCP Excellence is not registered in .gitmodules."
+}
+
+if (Test-Path $OcpExcellenceFullPath) {
+
+    Write-Success `
+        "OCP Excellence directory exists."
+
+}
+else {
+
+    Write-WarningMessage `
+        "OCP Excellence directory does not exist."
 }
 
 # ============================================================
@@ -1553,6 +1699,12 @@ Write-Host ""
 
 Write-Host "Project:"
 Write-Host "  $ProjectPath"
+
+Write-Host ""
+
+Write-Host "Git:"
+Write-Host "  Submodule:"
+Write-Host "    external/ocp-excellence"
 
 Write-Host ""
 
@@ -1574,9 +1726,12 @@ Write-Host "  OpenSpec"
 
 Write-Host ""
 
-Write-Host "Git:"
-Write-Host "  OCP Excellence submodule"
-Write-Host "  external/ocp-excellence"
+Write-Host "Project directories:"
+Write-Host "  .serena/"
+Write-Host "  .kiro/"
+Write-Host "  openspec/"
+Write-Host "  .codegraph/"
+Write-Host "  external/ocp-excellence/"
 
 Write-Host ""
 
@@ -1587,17 +1742,25 @@ Write-Host ""
 
 Write-Host "Recommended next steps:" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  1. Review:"
+
+Write-Host "  1. Review Graphify:"
 Write-Host "     graphify-out/GRAPH_REPORT.md"
+
 Write-Host ""
+
 Write-Host "  2. Review Kiro:"
 Write-Host "     .kiro/"
+
 Write-Host ""
+
 Write-Host "  3. Review OpenSpec:"
 Write-Host "     openspec/"
+
 Write-Host ""
+
 Write-Host "  4. Check APM:"
 Write-Host "     apm audit"
+
 Write-Host ""
 
 # ============================================================
@@ -1621,7 +1784,7 @@ Write-Host "    openspec config profile" -ForegroundColor White
 Write-Host ""
 
 Write-Host "NOTE:" -ForegroundColor Yellow
-Write-Host "This command is interactive and therefore is intentionally not"
+Write-Host "This command is interactive and is intentionally not"
 Write-Host "automatically configured by this bootstrap script."
 Write-Host ""
 
@@ -1634,4 +1797,9 @@ Write-Host ""
 Write-Host "============================================================" -ForegroundColor Yellow
 Write-Host ""
 
+# ============================================================
+# Finish
+# ============================================================
+
 Stop-Transcript | Out-Null
+
