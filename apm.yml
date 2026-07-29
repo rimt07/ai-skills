@@ -24,7 +24,10 @@ includes: auto
 
 # Dependencies
 dependencies:
-  apm: []
+  apm:
+    - git: https://gitlab.com/arcteryx-ocp/ocp-excellence.git
+      ref: v1.0
+      alias: ocp-standards
   mcp:
     - name: codegraph
       registry: false
@@ -34,8 +37,7 @@ dependencies:
 
 # Development dependencies (not shipped with package)
 devDependencies:
-  apm:
-    - arcteryx-ocp/ocp-excellence
+  apm: []
 
 # Optional scripts for package automation
 scripts:
