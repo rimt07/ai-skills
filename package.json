@@ -1,0 +1,119 @@
+{
+  "name": "ai-skills",
+  "version": "1.0.0",
+  "displayName": "AI Skills Collection",
+  "description": "Comprehensive AI agent skills collection for software development, project management, and workflow automation",
+  "publisher": "rimt07",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rimt07/ai-skills.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rimt07/ai-skills/issues"
+  },
+  "homepage": "https://github.com/rimt07/ai-skills",
+  "keywords": [
+    "ai",
+    "skills",
+    "agents",
+    "development", 
+    "automation",
+    "openspec",
+    "workflow",
+    "code-analysis",
+    "sdlc",
+    "epam",
+    "leap"
+  ],
+  "categories": [
+    "Development Tools",
+    "AI & Machine Learning", 
+    "Project Management",
+    "Code Quality"
+  ],
+  "icon": "🤖",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "engines": {
+    "apm": "^0.10.0"
+  },
+  "contributes": {
+    "skills": [
+      {
+        "id": "openspec-workflow-custom",
+        "title": "OpenSpec Workflow",
+        "description": "Complete SDLC workflow management with OpenSpec methodology",
+        "path": ".apm/skills/openspec-workflow-custom/SKILL.md"
+      },
+      {
+        "id": "code-analisys-intelligence-protocol",
+        "title": "Code Analysis Intelligence",
+        "description": "Semantic code analysis with AST parsing and graph-based navigation",
+        "path": ".apm/skills/code-analisys-intelligence-protocol/SKILL.md"
+      },
+      {
+        "id": "debugging-and-error-recovery",
+        "title": "Debugging & Error Recovery",
+        "description": "Systematic root-cause debugging methodology",
+        "path": ".apm/skills/debugging-and-error-recovery/SKILL.md"
+      },
+      {
+        "id": "writing-skills",
+        "title": "Technical Writing Skills",
+        "description": "Technical writing and documentation enhancement",
+        "path": ".apm/skills/writing-skills/SKILL.md"
+      },
+      {
+        "id": "owasp-security-audit",
+        "title": "OWASP Security Audit",
+        "description": "Security vulnerability assessment and OWASP Top 10 audit",
+        "path": ".apm/skills/owasp-security-audit/SKILL.md"
+      }
+    ],
+    "agents": [
+      {
+        "id": "openspec-reviewer",
+        "title": "OpenSpec Reviewer",
+        "description": "Specialized agent for OpenSpec change review and validation",
+        "path": ".apm/agents/openspec-reviewer.md"
+      }
+    ]
+  },
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./apm.yml",
+  "files": [
+    "apm.yml",
+    ".apm/",
+    "README.md", 
+    "LICENSE",
+    "CONTRIBUTING.md",
+    "docs/",
+    "examples/"
+  ],
+  "leap": {
+    "marketplace": {
+      "category": "AI Skills & Agents",
+      "subcategory": "Development Tools",
+      "pricing": "free",
+      "support_level": "community"
+    },
+    "compatibility": {
+      "platforms": [
+        "claude",
+        "cursor", 
+        "copilot",
+        "codex",
+        "gemini",
+        "windsurf",
+        "kiro",
+        "opencode"
+      ],
+      "minimum_version": "1.0.0"
+    }
+  }
+}

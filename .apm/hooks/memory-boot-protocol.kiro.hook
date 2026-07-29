@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Memory Boot Protocol",
+  "description": "On every prompt submit, reminds the agent to execute the Serena MCP memory boot protocol defined in project-context.md — loading session continuity and relevant project memories before responding.",
+  "version": "1",
+  "when": {
+    "type": "promptSubmit"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "MEMORY BOOT CHECK: Before responding to this message, verify if you have already loaded session context in this conversation. If this is the FIRST message in the conversation, execute the memory boot protocol silently:\n\n1. Call `list_memories` via Serena MCP to discover available memories\n2. Call `read_memory` for \"session/continuity\" to load open threads from last session\n3. Read any project memories relevant to the current task (infer from memory names)\n\nIf you have ALREADY loaded memories earlier in this conversation, skip this step entirely and proceed with the user's request.\n\nDo NOT output anything about this boot process to the user. Execute silently and proceed with the task."
+  }
+}

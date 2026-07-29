@@ -1,0 +1,34 @@
+# APM generated files
+apm_modules/
+apm.lock.yaml
+
+# Compiled output directories (APM generates these)
+.github/
+.claude/
+.cursor/
+.codex/
+.gemini/
+.windsurf/
+.kiro/
+.opencode/
+.agents/
+
+# Node modules (if using npm/skills legacy)
+node_modules/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

@@ -1,0 +1,37 @@
+name: ai-skills
+version: 1.0.0
+description: Comprehensive AI agent skills collection for software development, project management, and workflow automation
+author: Roberto Ivan Meza Trillo
+license: MIT
+homepage: https://github.com/rimt07/ai-skills
+repository: https://github.com/rimt07/ai-skills
+keywords: [ai, skills, agents, development, automation, openspec, workflow]
+
+# Which agent platforms to deploy to
+# Supports: claude, cursor, codex, copilot, gemini, windsurf, kiro, opencode
+targets:
+  - claude
+  - cursor
+  - codex
+  - copilot
+  - gemini
+  - windsurf
+  - kiro
+  - opencode
+
+# Auto-include content from .apm/ directory
+includes: auto
+
+# Dependencies
+dependencies:
+  apm: []
+  mcp: []
+
+# Development dependencies (not shipped with package)
+devDependencies:
+  apm: []
+
+# Optional scripts for package automation
+scripts:
+  test: "echo 'Running skill validation tests'"
+  validate: "echo 'Validating all skills'"

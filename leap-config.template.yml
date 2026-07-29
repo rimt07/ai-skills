@@ -1,0 +1,239 @@
+# LEAP Enterprise Configuration Template
+# Copy this file as 'leap-config.yml' in your project and customize for your team
+
+# LEAP environment configuration
+leap:
+  environment: "enterprise"
+  version: "1.0.0"
+  
+  # EPAM organizational settings
+  epam:
+    # Update these with your specific EPAM details
+    division: "Digital Platform Engineering"  # e.g., "Digital Platform Engineering", "Cloud & Infrastructure"
+    project_code: "YOUR-PROJECT-CODE"        # Your EPAM project code
+    cost_center: "YOUR-COST-CENTER"          # Your cost center
+    security_level: "internal"               # internal, restricted, confidential
+    region: "global"                         # global, americas, emea, apac
+    
+    # Team information
+    team:
+      name: "AI Development Team"
+      lead: "team.lead@epam.com"
+      members: []                             # List of team member emails
+      
+  # LEAP marketplace settings
+  marketplace:
+    auto_updates: true                        # Enable automatic skill updates
+    beta_features: false                      # Enable beta/experimental features
+    telemetry: true                          # Enable usage telemetry (required for enterprise)
+    
+  # Compliance and security settings
+  compliance:
+    gdpr_mode: true                          # Enable GDPR compliance features
+    audit_logging: true                      # Enable detailed audit logging
+    data_residency: "eu"                     # eu, us, apac (where applicable)
+    
+    # Security policies
+    security:
+      require_mfa: true                      # Require multi-factor authentication
+      session_timeout: 28800                # Session timeout in seconds (8 hours)
+      ip_restrictions: []                    # List of allowed IP ranges (empty = no restrictions)
+      
+  # Skills configuration
+  skills:
+    # OpenSpec Workflow (Enterprise Enhanced)
+    openspec-workflow-custom:
+      enabled: true
+      enterprise_features: true
+      epam_templates: true
+      customizations:
+        default_templates: "epam-standard"
+        approval_workflow: "epam-process"
+        integration_tools: ["epam-jira", "epam-confluence"]
+        
+    # Code Analysis Intelligence (Enterprise Enhanced)  
+    code-analisys-intelligence-protocol:
+      enabled: true
+      enterprise_features: true
+      epam_standards: true
+      customizations:
+        coding_standards: "epam-java-standards"  # epam-java-standards, epam-js-standards, etc.
+        quality_gates: "epam-sonar-rules"
+        compliance_checks: true
+        
+    # Security Audit (Enterprise Enhanced)
+    owasp-security-audit:
+      enabled: true
+      enterprise_features: true
+      epam_policies: true
+      customizations:
+        security_framework: "epam-security-framework"
+        compliance_standards: ["owasp", "sans", "epam-internal"]
+        reporting_format: "epam-standard"
+        
+    # Technical Writing (Enterprise Enhanced)
+    writing-skills:
+      enabled: true
+      enterprise_features: true
+      epam_templates: true
+      customizations:
+        document_templates: "epam-technical-writing"
+        review_process: "epam-documentation-review"
+        style_guide: "epam-style-guide"
+        
+    # Standard skills (no enterprise enhancements)
+    debugging-and-error-recovery:
+      enabled: true
+      enterprise_features: false
+      
+    agent-memory-protocol:
+      enabled: true
+      enterprise_features: false
+      
+    explain:
+      enabled: true
+      enterprise_features: false
+      
+    meta-prompt:
+      enabled: true
+      enterprise_features: false
+      
+    commit:
+      enabled: true
+      enterprise_features: false
+      
+    adversarial-review:
+      enabled: true
+      enterprise_features: false
+      
+  # Integration settings
+  integrations:
+    # EPAM GitLab integration
+    gitlab:
+      enabled: true
+      server: "git.epam.com"
+      api_token_env: "EPAM_GITLAB_TOKEN"
+      default_namespace: "your-group"
+      
+    # EPAM Jira integration
+    jira:
+      enabled: true
+      server: "jira.epam.com"
+      api_token_env: "EPAM_JIRA_TOKEN"
+      default_project: "YOUR-PROJECT"
+      
+    # EPAM Confluence integration
+    confluence:
+      enabled: true
+      server: "confluence.epam.com"
+      api_token_env: "EPAM_CONFLUENCE_TOKEN"
+      default_space: "YOUR-SPACE"
+      
+    # Microsoft Teams integration
+    teams:
+      enabled: false
+      webhook_env: "TEAMS_WEBHOOK_URL"
+      
+    # Slack integration (if used)
+    slack:
+      enabled: false
+      webhook_env: "SLACK_WEBHOOK_URL"
+      
+  # Enterprise features
+  features:
+    # Audit and compliance
+    audit_logging: true
+    compliance_reporting: true
+    usage_analytics: true
+    
+    # Collaboration
+    team_skills_sharing: true
+    cross_project_templates: true
+    knowledge_base_integration: true
+    
+    # Advanced AI features
+    enterprise_ai_models: true
+    custom_training_data: false              # Requires special approval
+    advanced_analytics: true
+    
+  # Monitoring and alerting
+  monitoring:
+    enabled: true
+    metrics_retention: 90                    # Days to retain metrics
+    
+    # Alert thresholds
+    alerts:
+      error_rate_threshold: 5                # Percentage
+      performance_threshold: 5000           # Milliseconds
+      usage_spike_threshold: 200            # Percentage increase
+      
+    # Notification channels
+    notifications:
+      email: ["team.lead@epam.com"]
+      slack: "#ai-skills-alerts"
+      
+  # Resource limits
+  limits:
+    max_concurrent_skills: 10
+    max_memory_usage: "2GB"
+    max_cpu_usage: "80%"
+    rate_limit_per_hour: 1000
+    
+# Platform-specific configurations
+platforms:
+  # Claude Enterprise configuration
+  claude:
+    model_preference: "claude-3.5-sonnet"
+    max_tokens: 4096
+    temperature: 0.1
+    enterprise_features: true
+    
+  # GitHub Copilot Enterprise configuration
+  copilot:
+    suggestions_enabled: true
+    telemetry_enabled: true
+    enterprise_policies: true
+    
+  # Cursor configuration
+  cursor:
+    ai_model: "claude-3.5-sonnet"
+    auto_suggestions: true
+    privacy_mode: "enterprise"
+    
+# Environment-specific overrides
+environments:
+  development:
+    debug_mode: true
+    verbose_logging: true
+    beta_features: true
+    
+  staging:
+    debug_mode: false
+    performance_monitoring: true
+    integration_testing: true
+    
+  production:
+    debug_mode: false
+    performance_monitoring: true
+    security_hardening: true
+    compliance_mode: "strict"
+
+# Custom enterprise templates and configurations
+templates:
+  # Custom OpenSpec templates for EPAM
+  openspec:
+    proposal_template: "epam-proposal-template.md"
+    design_template: "epam-design-template.md"
+    review_checklist: "epam-review-checklist.md"
+    
+  # Custom documentation templates
+  documentation:
+    adr_template: "epam-adr-template.md"
+    api_doc_template: "epam-api-template.md"
+    user_guide_template: "epam-user-guide-template.md"
+    
+  # Custom code review templates
+  code_review:
+    checklist: "epam-code-review-checklist.md"
+    security_checklist: "epam-security-review.md"
+    performance_checklist: "epam-performance-review.md"

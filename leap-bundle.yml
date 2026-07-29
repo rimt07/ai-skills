@@ -1,0 +1,231 @@
+# LEAP Bundle Configuration
+# This file defines how the AI Skills Collection integrates with EPAM's LEAP marketplace
+
+bundle_info:
+  name: "ai-skills"
+  display_name: "AI Skills Collection" 
+  version: "1.0.0"
+  bundle_type: "skills-collection"
+  
+  # LEAP marketplace metadata
+  marketplace:
+    category: "Development Tools"
+    subcategories:
+      - "AI & Machine Learning"
+      - "Code Quality"
+      - "Project Management"
+      - "Security Tools"
+    
+    # LEAP pricing and licensing
+    pricing:
+      model: "free"
+      currency: "USD"
+      price: 0
+      
+    license:
+      type: "MIT"
+      file: "LICENSE"
+      
+    # LEAP publisher information
+    publisher:
+      name: "Roberto Ivan Meza Trillo"
+      email: "roberto.meza@epam.com"
+      organization: "EPAM Systems"
+      
+  # Package description for LEAP
+  description:
+    short: "Comprehensive AI agent skills for development, project management, and workflow automation"
+    long: |
+      The AI Skills Collection provides 16+ specialized skills for AI agents, covering:
+      - OpenSpec workflow management
+      - Code analysis and debugging
+      - Security auditing (OWASP)
+      - Technical writing
+      - Project planning and task breakdown
+      
+      Compatible with Claude, Cursor, Copilot, Codex, Gemini, Windsurf, Kiro, and OpenCode.
+      Includes enterprise features for EPAM teams.
+      
+  # LEAP compatibility matrix
+  compatibility:
+    platforms:
+      claude: ">=1.0.0"
+      cursor: ">=1.0.0"
+      copilot: ">=1.0.0"
+      codex: ">=1.0.0"
+      gemini: ">=1.0.0"
+      windsurf: ">=1.0.0"
+      kiro: ">=1.0.0"
+      opencode: ">=1.0.0"
+      
+    apm_version: ">=0.10.0"
+    
+    # EPAM-specific platform support
+    epam_platforms:
+      epam_claude: true
+      epam_copilot: true
+      epam_internal_ai: true
+
+# LEAP installation configuration  
+installation:
+  method: "apm"
+  source: "git"
+  repository: "https://github.com/rimt07/ai-skills.git"
+  
+  # Installation steps for LEAP
+  steps:
+    - name: "validate_environment"
+      description: "Validate APM installation and EPAM network access"
+      
+    - name: "install_dependencies"
+      description: "Install APM dependencies"
+      command: "apm install"
+      
+    - name: "configure_enterprise"
+      description: "Apply EPAM enterprise configuration"
+      config_file: "leap-config.yml"
+      
+    - name: "compile_targets"
+      description: "Compile for available platforms"
+      command: "apm compile"
+      
+    - name: "verify_installation"
+      description: "Verify skills are properly installed"
+      command: "apm list"
+
+# LEAP-specific features and configurations
+enterprise_features:
+  # EPAM compliance and security
+  compliance:
+    gdpr: true
+    sox: true
+    iso27001: true
+    epam_security_standards: true
+    
+  # Enterprise integrations
+  integrations:
+    epam_gitlab: true
+    epam_jira: true
+    epam_confluence: true
+    epam_teams: true
+    
+  # Audit and monitoring
+  audit:
+    usage_logging: true
+    security_scanning: true
+    compliance_reporting: true
+    
+  # Team collaboration features
+  collaboration:
+    skill_sharing: true
+    team_templates: true
+    project_integration: true
+
+# Skills inventory for LEAP marketplace
+skills_catalog:
+  - id: "openspec-workflow-custom"
+    name: "OpenSpec Workflow"
+    description: "Complete SDLC workflow management"
+    category: "Project Management"
+    enterprise_enhanced: true
+    epam_templates: true
+    
+  - id: "code-analisys-intelligence-protocol"
+    name: "Code Analysis Intelligence"
+    description: "Semantic code analysis with AST parsing"
+    category: "Code Quality"
+    enterprise_enhanced: true
+    epam_standards: true
+    
+  - id: "debugging-and-error-recovery"
+    name: "Debugging & Error Recovery"
+    description: "Systematic debugging methodology"
+    category: "Development Tools"
+    enterprise_enhanced: false
+    
+  - id: "owasp-security-audit"
+    name: "OWASP Security Audit"
+    description: "Security vulnerability assessment"
+    category: "Security"
+    enterprise_enhanced: true
+    epam_policies: true
+    
+  - id: "writing-skills"
+    name: "Technical Writing"
+    description: "Documentation and writing enhancement"
+    category: "Documentation"
+    enterprise_enhanced: true
+    epam_templates: true
+
+# LEAP deployment configuration
+deployment:
+  # Target environments
+  environments:
+    - name: "development"
+      description: "Development environment for testing"
+      
+    - name: "staging" 
+      description: "Staging environment for validation"
+      
+    - name: "production"
+      description: "Production environment for EPAM teams"
+      
+  # Rollout strategy
+  rollout:
+    strategy: "phased"
+    phases:
+      - name: "pilot"
+        percentage: 10
+        duration: "1 week"
+        
+      - name: "early_adopters"
+        percentage: 30
+        duration: "2 weeks"
+        
+      - name: "general_availability"
+        percentage: 100
+        duration: "ongoing"
+
+# Support and documentation for LEAP
+support:
+  channels:
+    - type: "email"
+      contact: "leap-support@epam.com"
+      
+    - type: "slack"
+      channel: "#leap-ai-marketplace"
+      
+    - type: "wiki"
+      url: "https://wiki.epam.com/leap/ai-skills"
+      
+  documentation:
+    installation_guide: "docs/LEAP_INTEGRATION.md"
+    user_manual: "README.md"
+    contribution_guide: "CONTRIBUTING.md"
+    migration_guide: "docs/MIGRATION.md"
+    
+  # SLA for enterprise support
+  sla:
+    response_time: "4 hours"
+    resolution_time: "1-2 business days"
+    availability: "99.5%"
+
+# Quality assurance for LEAP
+quality:
+  testing:
+    automated_tests: true
+    integration_tests: true
+    security_tests: true
+    compliance_tests: true
+    
+  validation:
+    code_quality: true
+    documentation_completeness: true
+    enterprise_standards: true
+    
+  # Continuous monitoring
+  monitoring:
+    usage_analytics: true
+    performance_metrics: true
+    error_tracking: true
+    security_monitoring: true

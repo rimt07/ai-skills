@@ -1,0 +1,85 @@
+name: ai-skills
+version: 1.0.0
+description: Comprehensive AI agent skills collection for software development, project management, and workflow automation
+category: Development Tools
+tags:
+  - ai-skills
+  - development
+  - workflow
+  - openspec
+  - code-analysis
+  - automation
+  - sdlc
+  - project-management
+
+# LEAP-specific metadata
+leap:
+  marketplace_id: "epam.ai-skills"
+  vendor: "Roberto Ivan Meza Trillo"
+  license: "MIT"
+  pricing_model: "free"
+  
+  # LEAP categories
+  categories:
+    - "Development & Engineering"
+    - "AI & Machine Learning"
+    - "Project Management"
+    - "Code Quality"
+  
+  # LEAP compatibility requirements
+  compatibility:
+    platforms:
+      - claude
+      - cursor
+      - copilot
+      - codex
+      - gemini
+      - windsurf
+      - kiro
+      - opencode
+    
+  # Support information
+  support:
+    documentation: "https://github.com/rimt07/ai-skills/blob/main/README.md"
+    issues: "https://github.com/rimt07/ai-skills/issues"
+    contact: "roberto.meza@epam.com"
+  
+  # Package metadata for LEAP
+  package_info:
+    icon: "🤖"
+    screenshots: []
+    demo_video: ""
+    
+  # Skills inventory for LEAP marketplace
+  skills:
+    - name: "openspec-workflow-custom"
+      description: "Complete SDLC workflow management with OpenSpec"
+      category: "Project Management"
+    - name: "code-analisys-intelligence-protocol" 
+      description: "Semantic code analysis with AST parsing"
+      category: "Code Quality"
+    - name: "debugging-and-error-recovery"
+      description: "Systematic root-cause debugging methodology"
+      category: "Development"
+    - name: "writing-skills"
+      description: "Technical writing and documentation enhancement"
+      category: "Documentation"
+    - name: "owasp-security-audit"
+      description: "Security vulnerability assessment and audit"
+      category: "Security"
+
+# Installation requirements
+requirements:
+  apm_version: ">=0.10.0"
+  
+# LEAP marketplace bundle configuration
+bundle:
+  type: "skills-collection"
+  entry_point: "apm.yml"
+  assets:
+    - ".apm/"
+    - "README.md"
+    - "LICENSE"
+    - "CONTRIBUTING.md"
+    - "docs/"
+    - "examples/"
