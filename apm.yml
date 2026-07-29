@@ -25,6 +25,9 @@ includes: auto
 # Dependencies
 dependencies:
   apm:
+  #  - git: https://github.com/arcteryx-ocp/ocp-excellence.git
+  #    ref: v1.0
+  #    alias: ocp-standards
   mcp:
     - name: codegraph
       registry: false
@@ -38,4 +41,5 @@ devDependencies:
 
 # Optional scripts for package automation
 scripts:
-  install-ai-stack: "./install-ai-stack.sh"
+  pre-requisites: |
+    npm install -g @fission-ai/openspec@latest
