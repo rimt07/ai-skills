@@ -1,0 +1,13 @@
+{
+  "name": "context-mode-pre",
+  "version": "1.0.0",
+  "description": "Context-mode pre-tool-use hook for context window protection",
+  "when": {
+    "type": "preToolUse",
+    "toolTypes": ["*"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "context-mode hook kiro pretooluse"
+  }
+}
