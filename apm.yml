@@ -25,7 +25,7 @@ includes: auto
 # Dependencies
 dependencies:
   apm:
-    - git: https://gitlab.com/arcteryx-ocp/ocp-excellence.git
+    - git: https://github.com/arcteryx-ocp/ocp-excellence.git
       ref: v1.0
       alias: ocp-standards
   mcp:
