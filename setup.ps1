@@ -497,8 +497,9 @@ if (Test-CommandExists "graphify") {
     }
 }
 
+
 # ============================================================
-# Stage 5
+# Stage 4
 # Git Submodules
 # ============================================================
 
@@ -508,104 +509,321 @@ Write-Host " Stage 4 - Git Submodules"
 Write-Host "============================================================"
 Write-Host ""
 
-Write-Info "Configuring OCP Excellence submodule..."
+$DevStandardsRepository = `
+    "https://github.com/arcteryx-ocp/ocp-excellence.git"
 
-$GitModulesFile = Join-Path $ProjectPath ".gitmodules"
-$SubmoduleFullPath = Join-Path $ProjectPath $DevStandardsPath
+$DevStandardsPath = `
+    "external/ocp-excellence"
+
+$GitModulesFile = `
+    Join-Path $ProjectPath ".gitmodules"
+
+$DevStandardsFullPath = `
+    Join-Path $ProjectPath $DevStandardsPath
 
 # ------------------------------------------------------------
-# Ensure external directory exists
+# Validate Git repository
 # ------------------------------------------------------------
 
-$ExternalDirectory = Join-Path $ProjectPath "external"
+Write-Info "Validating Git repository..."
 
-if (-not (Test-Path $ExternalDirectory)) {
+$GitRoot = `
+    (git rev-parse --show-toplevel 2>$null).Trim()
 
-    Write-Info "Creating external directory..."
-
-    New-Item `
-        -ItemType Directory `
-        -Path $ExternalDirectory `
-        -Force |
-        Out-Null
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($GitRoot)) {
+    throw "Unable to determine Git repository root."
 }
 
-# ------------------------------------------------------------
-# Handle existing submodule configuration
-# ------------------------------------------------------------
+$GitRoot = [System.IO.Path]::GetFullPath($GitRoot)
 
-$SubmoduleConfigured = $false
+if ($GitRoot.TrimEnd('\') -ne $ProjectPath.TrimEnd('\')) {
 
-if (Test-Path $GitModulesFile) {
+    Write-WarningMessage `
+        "ProjectPath is not the Git repository root."
 
-    $GitModulesContent = Get-Content `
-        $GitModulesFile `
-        -Raw `
-        -ErrorAction SilentlyContinue
+    Write-Host "ProjectPath : $ProjectPath"
+    Write-Host "Git root    : $GitRoot"
 
-    if ($GitModulesContent -match [regex]::Escape($DevStandardsPath)) {
-        $SubmoduleConfigured = $true
-    }
+    Write-Info "Switching to Git repository root..."
+
+    Set-Location $GitRoot
+
+    $ProjectPath = $GitRoot
 }
 
+Write-Success "Git repository root validated."
+
 # ------------------------------------------------------------
-# Add submodule
+# Check Git status
 # ------------------------------------------------------------
 
-if ($SubmoduleConfigured) {
+Write-Info "Checking Git status..."
 
-    Write-Success "OCP Excellence submodule already configured."
+$GitStatus = `
+    git status --short --untracked-files=all
 
-    if ($Force) {
+if ($LASTEXITCODE -ne 0) {
+    throw "Unable to read Git status."
+}
 
-        Write-Info "Updating existing OCP Excellence submodule..."
+if ($GitStatus) {
 
-        Invoke-ExternalCommand `
-            -Command "git" `
-            -Arguments @(
-                "submodule",
-                "update",
-                "--init",
-                "--recursive",
-                $DevStandardsPath
-            )
+    Write-Info "Current Git changes:"
 
+    $GitStatus | ForEach-Object {
+        Write-Host "  $_"
     }
 
 }
 else {
 
-    if (Test-Path $SubmoduleFullPath) {
+    Write-Success "Git working tree is clean."
+
+}
+
+# ------------------------------------------------------------
+# Check .gitmodules
+# ------------------------------------------------------------
+
+Write-Info "Checking .gitmodules..."
+
+if (Test-Path $GitModulesFile) {
+
+    Write-Success ".gitmodules exists."
+
+}
+else {
+
+    Write-Info ".gitmodules does not exist."
+
+    # Check whether Git already has .gitmodules
+    $GitModulesInIndex = `
+        git ls-files --error-unmatch .gitmodules 2>$null
+
+    if ($LASTEXITCODE -eq 0) {
 
         Write-WarningMessage `
-            "Directory exists but is not configured as a Git submodule: $DevStandardsPath"
+            ".gitmodules exists in Git index/HEAD but not in working tree."
 
         if ($Force) {
 
-            Write-Info "Removing existing directory because Force mode is enabled..."
+            Write-Info `
+                "Force mode enabled. Restoring .gitmodules..."
 
-            Remove-Item `
-                -Recurse `
-                -Force `
-                $SubmoduleFullPath
+            Invoke-ExternalCommand `
+                -Command "git" `
+                -Arguments @(
+                    "restore",
+                    "--source=HEAD",
+                    "--",
+                    ".gitmodules"
+                )
+
         }
         else {
 
             throw @"
-The directory already exists:
+.gitmodules is tracked by Git but missing from the working tree.
 
-$SubmoduleFullPath
+Run:
 
-but it is not configured as a Git submodule.
+    git restore .gitmodules
 
-Run the bootstrap with:
+or run the bootstrap using:
 
     .\setup.ps1 -Force
 "@
+
+        }
+
+    }
+}
+
+# ------------------------------------------------------------
+# Check for unresolved merge conflicts
+# ------------------------------------------------------------
+
+Write-Info "Checking for Git merge conflicts..."
+
+$UnmergedFiles = `
+    git diff --name-only --diff-filter=U
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Unable to check Git merge conflicts."
+}
+
+if ($UnmergedFiles) {
+
+    Write-ErrorMessage "Git contains unresolved merge conflicts:"
+
+    $UnmergedFiles | ForEach-Object {
+        Write-Host "  $_"
+    }
+
+    if ($UnmergedFiles -contains ".gitmodules") {
+
+        throw @"
+.gitmodules has an unresolved merge conflict.
+
+Resolve the conflict before running the bootstrap.
+
+After resolving it:
+
+    git add .gitmodules
+
+Then run the bootstrap again.
+"@
+
+    }
+}
+
+# ------------------------------------------------------------
+# Validate .gitmodules state
+# ------------------------------------------------------------
+
+if (Test-Path $GitModulesFile) {
+
+    Write-Info "Validating .gitmodules..."
+
+    $GitModulesContent = `
+        Get-Content `
+            $GitModulesFile `
+            -Raw `
+            -ErrorAction Stop
+
+    if ([string]::IsNullOrWhiteSpace($GitModulesContent)) {
+
+        Write-WarningMessage `
+            ".gitmodules exists but is empty."
+
+        if ($Force) {
+
+            Write-Info `
+                "Force mode enabled. Recreating .gitmodules..."
+
+            Remove-Item `
+                -Force `
+                $GitModulesFile
+        }
+        else {
+
+            throw @"
+.gitmodules exists but is empty.
+
+Delete it or run:
+
+    .\setup.ps1 -Force
+"@
+
+        }
+    }
+}
+
+# ------------------------------------------------------------
+# Check whether submodule is already registered
+# ------------------------------------------------------------
+
+Write-Info "Checking existing submodule configuration..."
+
+$ExistingSubmodule = `
+    git config --file .gitmodules `
+        --get-regexp `
+        "^submodule\..*\.path$" `
+        2>$null
+
+if ($ExistingSubmodule) {
+
+    Write-Info "Existing submodule configuration found:"
+
+    $ExistingSubmodule | ForEach-Object {
+        Write-Host "  $_"
+    }
+
+}
+
+# ------------------------------------------------------------
+# Check exact submodule path
+# ------------------------------------------------------------
+
+$ExistingPath = `
+    git config `
+        --file .gitmodules `
+        --get-regexp `
+        "^submodule\..*\.path$" `
+        2>$null |
+    Where-Object {
+        $_ -match "\s+$([regex]::Escape($DevStandardsPath))$"
+    }
+
+if ($ExistingPath) {
+
+    Write-Success `
+        "OCP Excellence is already registered in .gitmodules."
+
+}
+else {
+
+    # --------------------------------------------------------
+    # Remove stale directory if Force is enabled
+    # --------------------------------------------------------
+
+    if (Test-Path $DevStandardsFullPath) {
+
+        Write-WarningMessage `
+            "Target submodule directory already exists:"
+
+        Write-Host "  $DevStandardsFullPath"
+
+        if ($Force) {
+
+            Write-Info `
+                "Force mode enabled. Removing stale directory..."
+
+            Remove-Item `
+                -Recurse `
+                -Force `
+                $DevStandardsFullPath
+
+        }
+        else {
+
+            throw @"
+The target submodule directory already exists:
+
+$DevStandardsFullPath
+
+If this directory is not an existing Git submodule, remove it
+or run the bootstrap with:
+
+    .\setup.ps1 -Force
+"@
+
         }
     }
 
-    Write-Info "Adding OCP Excellence submodule..."
+    # --------------------------------------------------------
+    # Create external directory
+    # --------------------------------------------------------
+
+    $ExternalDirectory = `
+        Join-Path $ProjectPath "external"
+
+    if (-not (Test-Path $ExternalDirectory)) {
+
+        Write-Info "Creating external directory..."
+
+        New-Item `
+            -ItemType Directory `
+            -Path $ExternalDirectory `
+            -Force |
+            Out-Null
+    }
+
+    # --------------------------------------------------------
+    # Add submodule
+    # --------------------------------------------------------
+
+    Write-Info "Adding dev-standards submodule..."
 
     Invoke-ExternalCommand `
         -Command "git" `
@@ -616,32 +834,74 @@ Run the bootstrap with:
             $DevStandardsPath
         )
 
-    Write-Success "OCP Excellence submodule added."
+    Write-Success `
+        "OCP Excellence submodule added."
+
 }
 
 # ------------------------------------------------------------
-# Validate submodule
+# Initialize/update submodules
 # ------------------------------------------------------------
 
-if (Test-Path $GitModulesFile) {
+Write-Info "Initializing Git submodules..."
 
-    Write-Success ".gitmodules created/configured."
+Invoke-ExternalCommand `
+    -Command "git" `
+    -Arguments @(
+        "submodule",
+        "sync",
+        "--recursive"
+    )
+
+Invoke-ExternalCommand `
+    -Command "git" `
+    -Arguments @(
+        "submodule",
+        "update",
+        "--init",
+        "--recursive"
+    )
+
+Write-Success `
+    "Git submodules initialized."
+
+# ------------------------------------------------------------
+# Verify submodule
+# ------------------------------------------------------------
+
+Write-Info "Verifying OCP Excellence submodule..."
+
+if (-not (Test-Path $DevStandardsFullPath)) {
+
+    throw @"
+OCP Excellence submodule was registered but its directory was not found:
+
+$DevStandardsFullPath
+"@
 
 }
-else {
 
-    throw ".gitmodules was not created."
+$SubmoduleStatus = `
+    git submodule status `
+        -- $DevStandardsPath
+
+if ($LASTEXITCODE -ne 0) {
+
+    throw `
+        "Unable to verify OCP Excellence submodule."
+
 }
 
-if (Test-Path $SubmoduleFullPath) {
+Write-Host ""
+Write-Host "OCP Excellence submodule:"
+Write-Host "  Repository : $DevStandardsRepository"
+Write-Host "  Path       : $DevStandardsPath"
+Write-Host "  Status     : $SubmoduleStatus"
+Write-Host ""
 
-    Write-Success "OCP Excellence submodule available."
+Write-Success `
+    "OCP Excellence submodule configured successfully."
 
-}
-else {
-
-    throw "OCP Excellence submodule directory was not created."
-}
 
 # ============================================================
 # Stage 5
