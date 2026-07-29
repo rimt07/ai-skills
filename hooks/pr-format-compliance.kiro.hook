@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "PR Format Compliance",
+  "description": "After writing PR descriptions or commit messages, validates format compliance. Enforces: pull-request-guidelines.md — PR title must include Jira ticket, branch must follow naming convention.",
+  "version": "1.0.0",
+  "when": {
+    "type": "postToolUse",
+    "toolTypes": ["shell"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "DETERMINISTIC GATE — PR FORMAT COMPLIANCE\n\nAfter this shell command completed, check if it was a git commit or PR-related command (git commit, gh pr create, git push). If so, validate:\n\n1. BRANCH NAME format:\n   - Must match: feature/TICKET-description, bugfix/TICKET-description, hotfix/TICKET-description, release/vX.Y.Z\n   - Must use lowercase and hyphens only\n   - Must include Jira ticket number\n\n2. COMMIT MESSAGE format:\n   - Should follow conventional commits or include Jira ticket reference\n   - Should explain the 'why' not just the 'what'\n\n3. PR TITLE format (if gh pr create):\n   - Must match: [JIRA-TICKET]: Description\n   - Example: [ORDER-209]: Improve RLI Logs\n\nIf the command was not git/PR related, skip this check.\n\nIf format violation detected:\n- WARN: 'WARNING: [Specific violation]. OCP requires Jira ticket in branch names and PR titles. Reference: .kiro/external/ocp-excellence/03-development/coding-standards/pull-request-guidelines.md'\n\nIf compliant or not applicable, proceed silently."
+  }
+}
