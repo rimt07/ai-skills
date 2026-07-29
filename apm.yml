@@ -24,14 +24,20 @@ includes: auto
 
 # Dependencies
 dependencies:
-  apm: []
-  mcp: []
+  apm:
+    - fission-ai/openspec#latest
+  mcp:
+    - name: codegraph
+      registry: false
+      transport: stdio
+      command: codegraph
+      args: ["@colbymchenry/codegraph", "serve", "--mcp"]
 
 # Development dependencies (not shipped with package)
 devDependencies:
-  apm: []
+  apm:
+    - arcteryx-ocp/ocp-excellence
 
 # Optional scripts for package automation
 scripts:
-  test: "echo 'Running skill validation tests'"
-  validate: "echo 'Validating all skills'"
+  pre-requisites: "npm install -g @fission-ai/openspec@latest"
