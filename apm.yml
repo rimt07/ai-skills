@@ -25,7 +25,6 @@ includes: auto
 # Dependencies
 dependencies:
   apm:
-    - arcteryx-ocp/ocp-excellence.git#main
   mcp:
     - name: codegraph
       registry: false
@@ -39,4 +38,4 @@ devDependencies:
 
 # Optional scripts for package automation
 scripts:
-  pre-requisites: "npm install -g @fission-ai/openspec@latest"
+  install-ai-stack: "./install-ai-stack.sh"
