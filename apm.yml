@@ -24,8 +24,7 @@ includes: auto
 
 # Dependencies
 dependencies:
-  apm:
-    - fission-ai/openspec#latest
+  apm: []
   mcp:
     - name: codegraph
       registry: false
