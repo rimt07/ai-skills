@@ -25,7 +25,7 @@ includes: auto
 # Dependencies
 dependencies:
   apm:
-    - arcteryx-ocp/ocp-excellence.git#v1.0.0
+    - arcteryx-ocp/ocp-excellence.git#main
   mcp:
     - name: codegraph
       registry: false
