@@ -27,7 +27,6 @@ dependencies:
   apm:
     - git: ssh://git@github.com:arcteryx-ocp/ocp-excellence.git
       ref: v1.0.0
-      alias: ocp-standards
   mcp:
     - name: codegraph
       registry: false
