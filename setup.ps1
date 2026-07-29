@@ -484,66 +484,252 @@ if (Test-CommandExists "graphify") {
 }
 
 # ============================================================
-# Stage 5
-# Git submodules
+# Stage 4
+# OCP Excellence -> Kiro Steering Files
 # ============================================================
 
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Stage 4 - Git Submodules"
+Write-Host " Stage 4 - OCP Excellence Steering Files"
 Write-Host "============================================================"
 Write-Host ""
 
-if (-not (Test-Path ".gitmodules") -or $Force) {
+$OcpExcellenceRepository = `
+    "https://github.com/arcteryx-ocp/ocp-excellence.git"
 
-    if (-not (Test-Path $DevStandardsPath)) {
+$OcpExcellenceTempPath = `
+    Join-Path $env:TEMP "ocp-excellence"
 
-        Write-Info "Adding dev-standards submodule..."
+$KiroDirectory = `
+    Join-Path $ProjectPath ".kiro"
 
-        Invoke-ExternalCommand `
-            -Command "git" `
-            -Arguments @(
-                "submodule",
-                "add",
-                $DevStandardsRepository,
-                $DevStandardsPath
-            )
+$KiroSteeringDirectory = `
+    Join-Path $KiroDirectory "steering"
+
+# ------------------------------------------------------------
+# Validate Git
+# ------------------------------------------------------------
+
+if (-not (Test-CommandExists "git")) {
+    throw "Git is required to install OCP Excellence."
+}
+
+# ------------------------------------------------------------
+# Clone repository
+# ------------------------------------------------------------
+
+if (Test-Path $OcpExcellenceTempPath) {
+
+    if ($Force) {
+
+        Write-Info "Removing existing OCP Excellence temporary directory..."
+
+        Remove-Item `
+            -Recurse `
+            -Force `
+            $OcpExcellenceTempPath
 
     }
     else {
 
-        Write-WarningMessage `
-            "Submodule directory already exists: $DevStandardsPath"
+        Write-Info `
+            "OCP Excellence repository already exists in temporary directory."
+
     }
 }
 
-Write-Info "Initializing Git submodules..."
+if (-not (Test-Path $OcpExcellenceTempPath)) {
 
-Invoke-ExternalCommand `
-    -Command "git" `
-    -Arguments @(
-        "submodule",
-        "update",
-        "--init",
-        "--recursive"
-    )
+    Write-Info "Cloning OCP Excellence..."
 
-Write-Success "Git submodules initialized."
+    Invoke-ExternalCommand `
+        -Command "git" `
+        -Arguments @(
+            "clone",
+            "--depth",
+            "1",
+            $OcpExcellenceRepository,
+            $OcpExcellenceTempPath
+        )
+
+    Write-Success "OCP Excellence repository cloned."
+}
+
+# ------------------------------------------------------------
+# Create Kiro directories
+# ------------------------------------------------------------
+
+if (-not (Test-Path $KiroDirectory)) {
+
+    Write-Info "Creating .kiro directory..."
+
+    New-Item `
+        -ItemType Directory `
+        -Path $KiroDirectory `
+        -Force |
+        Out-Null
+}
+
+if (-not (Test-Path $KiroSteeringDirectory)) {
+
+    Write-Info "Creating .kiro/steering directory..."
+
+    New-Item `
+        -ItemType Directory `
+        -Path $KiroSteeringDirectory `
+        -Force |
+        Out-Null
+}
+
+# ------------------------------------------------------------
+# Locate steering files
+# ------------------------------------------------------------
+
+Write-Info "Searching OCP Excellence for Kiro steering files..."
+
+$SteeringSources = @()
+
+$PotentialSteeringDirectories = @(
+    (Join-Path $OcpExcellenceTempPath ".kiro\steering"),
+    (Join-Path $OcpExcellenceTempPath "steering"),
+    (Join-Path $OcpExcellenceTempPath "docs\steering")
+)
+
+foreach ($Directory in $PotentialSteeringDirectories) {
+
+    if (Test-Path $Directory) {
+
+        Write-Info "Found steering directory:"
+        Write-Host "  $Directory"
+
+        $SteeringSources += $Directory
+    }
+}
+
+# ------------------------------------------------------------
+# Copy steering files
+# ------------------------------------------------------------
+
+if ($SteeringSources.Count -eq 0) {
+
+    Write-WarningMessage `
+        "No known steering directory was found in OCP Excellence."
+
+    Write-WarningMessage `
+        "Repository cloned at:"
+
+    Write-Host "  $OcpExcellenceTempPath"
+
+}
+else {
+
+    foreach ($Source in $SteeringSources) {
+
+        Write-Info `
+            "Copying steering files from: $Source"
+
+        Copy-Item `
+            -Path (Join-Path $Source "*") `
+            -Destination $KiroSteeringDirectory `
+            -Recurse `
+            -Force
+
+        Write-Success `
+            "Steering files copied to .kiro/steering"
+    }
+}
+
+# ------------------------------------------------------------
+# List installed steering files
+# ------------------------------------------------------------
+
+if (Test-Path $KiroSteeringDirectory) {
+
+    Write-Info "Installed Kiro steering files:"
+
+    Get-ChildItem `
+        $KiroSteeringDirectory `
+        -Recurse `
+        -File |
+        ForEach-Object {
+
+            $RelativePath = `
+                $_.FullName.Substring(
+                    $ProjectPath.Length + 1
+                )
+
+            Write-Host "  $RelativePath"
+        }
+}
+
+Write-Success "OCP Excellence steering setup completed."
+
+
 
 # ============================================================
 # Stage 6
 # Serena project
 # ============================================================
 
-Write-Host ""
-Write-Host "============================================================"
-Write-Host " Stage 5 - Serena Project"
-Write-Host "============================================================"
-Write-Host ""
+Write-Info "Initializing Serena project: $ProjectName"
 
-Write-Info "Creating Serena project: $ProjectName"
+$SerenaDirectory = Join-Path $ProjectPath ".serena"
+$SerenaProjectFile = Join-Path $SerenaDirectory "project.yml"
 
-try {
+# ------------------------------------------------------------
+# If an invalid Serena project exists, handle it
+# ------------------------------------------------------------
+
+if (Test-Path $SerenaProjectFile) {
+
+    Write-Info "Existing Serena project found:"
+    Write-Host "  $SerenaProjectFile"
+
+    $SerenaConfig = Get-Content `
+        $SerenaProjectFile `
+        -Raw
+
+    if ($SerenaConfig -notmatch "(?m)^languages\s*:") {
+
+        Write-WarningMessage `
+            "Serena project.yml is missing the required 'languages' property."
+
+        if ($Force) {
+
+            Write-WarningMessage `
+                "Force mode enabled. Removing invalid Serena project."
+
+            Remove-Item `
+                -Recurse `
+                -Force `
+                $SerenaDirectory
+
+        }
+        else {
+
+            throw @"
+Invalid Serena project configuration.
+
+File:
+$SerenaProjectFile
+
+The configuration does not contain the required 'languages' property.
+
+Run the bootstrap again using:
+
+    .\setup.ps1 -Force
+"@
+        }
+    }
+}
+
+# ------------------------------------------------------------
+# Create project
+# ------------------------------------------------------------
+
+if (-not (Test-Path $SerenaProjectFile)) {
+
+    Write-Info "Creating Serena project..."
 
     Invoke-ExternalCommand `
         -Command "serena" `
@@ -555,23 +741,90 @@ try {
         )
 
     Write-Success "Serena project created."
-
 }
-catch {
+else {
 
-    Write-WarningMessage `
-        "serena project create failed."
+    Write-Success "Serena project already exists."
+}
 
-    Write-Info "Trying serena project index..."
+# ------------------------------------------------------------
+# Index project
+# ------------------------------------------------------------
+
+Write-Info "Indexing Serena project..."
+
+Invoke-ExternalCommand `
+    -Command "serena" `
+    -Arguments @(
+        "project",
+        "index"
+    )
+
+Write-Success "Serena project indexed successfully."
+
+# ------------------------------------------------------------
+# Create Serena project if it doesn't exist
+# ------------------------------------------------------------
+
+if (-not (Test-Path $SerenaProjectFile)) {
+
+    Write-Info "Creating Serena project..."
 
     Invoke-ExternalCommand `
         -Command "serena" `
         -Arguments @(
             "project",
-            "index"
+            "create",
+            "--name",
+            $ProjectName
         )
 
-    Write-Success "Serena project indexed."
+    Write-Success "Serena project created."
+}
+
+# ------------------------------------------------------------
+# Index project
+# ------------------------------------------------------------
+
+Write-Info "Indexing Serena project..."
+
+Invoke-ExternalCommand `
+    -Command "serena" `
+    -Arguments @(
+        "project",
+        "index"
+    )
+
+Write-Success "Serena project indexed successfully."
+
+# ============================================================
+# Serena global initialization
+# ============================================================
+
+Write-Host ""
+Write-Host "============================================================"
+Write-Host " Serena Global Configuration"
+Write-Host "============================================================"
+Write-Host ""
+
+$SerenaGlobalConfig = Join-Path `
+    $env:USERPROFILE `
+    ".serena\serena_config.yml"
+
+if (-not (Test-Path $SerenaGlobalConfig)) {
+
+    Write-Info "Initializing Serena global configuration..."
+
+    Invoke-ExternalCommand `
+        -Command "serena" `
+        -Arguments @("init")
+
+    Write-Success "Serena global configuration initialized."
+
+}
+else {
+
+    Write-Success "Serena global configuration already exists."
 }
 
 # ============================================================
